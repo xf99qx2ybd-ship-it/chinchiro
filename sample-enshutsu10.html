@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ カットイン 衝撃スラム（最終・表示短め）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#fff;font-family:sans-serif;padding:16px;max-width:460px;margin:0 auto}
+h2{color:#f5c842;font-size:18px;margin-bottom:4px}
+.intro{color:#999;font-size:12px;line-height:1.7;margin-bottom:16px}
+.intro b{color:#ddd}
+.card{background:#1b1b1b;border:1.5px solid #333;border-radius:16px;padding:14px;margin-bottom:18px}
+.desc{font-size:11px;color:#888;margin-bottom:6px;line-height:1.6}
+
+.stage{position:relative;width:220px;height:220px;margin:8px auto 2px;border-radius:50%}
+.bowl{position:absolute;inset:0;border-radius:50%;overflow:hidden}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 30%,
+    #f8f8f6 0%,#eeece4 14%,#e0ddd5 28%,#cdc9c0 42%,
+    #b5b0a7 56%,#9e9990 68%,#8a857c 79%,#76716a 88%,#636059 100%);
+  box-shadow:inset 0 8px 22px rgba(0,0,0,.5),inset 0 -4px 10px rgba(255,255,255,.1),0 5px 28px rgba(0,0,0,.7);z-index:1}
+.shake{position:absolute;inset:0}
+
+.die{position:absolute;width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(145deg,#fffdf7,#f0ece2);
+  box-shadow:0 3px 7px rgba(0,0,0,.45),inset 0 1px 2px rgba(255,255,255,.7);z-index:3}
+.die.top{left:87px;top:60px}
+.die.bl {left:62px;top:118px}
+.die.br {left:112px;top:118px}
+.dot{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#333,#000)}
+
+/* ── カットイン（衝撃スラム） ── */
+.cutin{position:absolute;inset:0;z-index:8;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;opacity:0}
+.cutin.show{opacity:1}
+.cutin.out{opacity:0;transition:opacity .22s ease}      /* 着弾後にスッと消える */
+.fly{position:relative;display:flex;align-items:center;justify-content:center}
+.ci-text{font-size:30px;font-weight:900;letter-spacing:.05em;white-space:nowrap;line-height:1;
+  background:linear-gradient(168deg,#fff8e6 0%,#ffe49e 26%,#f3c155 50%,#fff0bf 68%,#e3a93f 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)) drop-shadow(0 2px 7px rgba(0,0,0,.4)) drop-shadow(0 0 10px rgba(255,196,84,.6));}
+.glow{position:absolute;left:50%;top:50%;width:215px;height:84px;transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse at center,rgba(8,5,0,.5) 0%,rgba(8,5,0,.2) 46%,transparent 72%);filter:blur(2px);opacity:0}
+.cutin.show .glow{animation:glowIn .2s ease both}
+@keyframes glowIn{from{opacity:0}to{opacity:1}}
+
+@keyframes shakeKf{0%{transform:translate(0,0)}20%{transform:translate(3px,-2px)}40%{transform:translate(-3px,2px)}60%{transform:translate(2px,2px)}80%{transform:translate(-2px,-1px)}100%{transform:translate(0,0)}}
+.shake.kick{animation:shakeKf .13s linear}
+
+.shock{position:absolute;left:50%;top:50%;width:74px;height:74px;border:3px solid rgba(255,214,128,.95);border-radius:50%;
+  transform:translate(-50%,-50%) scale(.3);opacity:0;box-shadow:0 0 16px rgba(255,190,90,.7)}
+.flash{position:absolute;left:50%;top:50%;width:240px;height:130px;transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse,rgba(255,246,222,.95) 0%,rgba(255,210,140,.4) 40%,transparent 68%);opacity:0}
+.streak{position:absolute;height:3px;border-radius:3px;opacity:0;
+  background:linear-gradient(90deg,transparent,#fff,transparent);box-shadow:0 0 8px #ffd98a}
+.streak.s1{left:0;top:42%;width:70%}
+.streak.s2{right:0;top:58%;width:62%}
+.streak.s3{left:6%;top:50%;width:46%}
+.cutin.show .fly{animation:slam .44s cubic-bezier(.12,.72,.2,1) both}
+.cutin.show .shock{animation:shock .52s ease-out .2s both}
+.cutin.show .flash{animation:flash .34s ease-out .18s both}
+.cutin.show .streak{animation:streak .3s ease-out both}
+.cutin.show .streak.s2{animation-delay:.04s}
+.cutin.show .streak.s3{animation-delay:.02s}
+@keyframes slam{0%{opacity:0;transform:translateX(165px) scale(1.28)}50%{opacity:1;transform:translateX(-14px) scale(1.06)}
+  68%{transform:translateX(7px) scale(.97)}82%{transform:translateX(-3px) scale(1.01)}92%{transform:translateX(2px)}100%{transform:translateX(0) scale(1)}}
+@keyframes shock{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}22%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) scale(1.7)}}
+@keyframes flash{0%{opacity:0}26%{opacity:.9}100%{opacity:0}}
+@keyframes streak{0%{opacity:0;transform:translateX(40px)}30%{opacity:1}100%{opacity:0;transform:translateX(-30px)}}
+
+.result{text-align:center;font-size:28px;font-weight:900;color:#f5c842;margin-top:6px;min-height:36px;letter-spacing:.06em;opacity:0;transition:opacity .3s}
+.result.show{opacity:1}
+.row{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.btn{background:#2a2a2a;color:#ccc;border:1px solid #444;border-radius:9px;padding:7px 18px;font-size:13px;cursor:pointer;font-weight:700}
+.btn:hover{background:#383838;color:#fff}
+.btn.main{background:#3a2c12;border-color:#6a521f;color:#f0d89a}
+.btn.main:hover{background:#4a3818}
+.flow{margin-top:12px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#aaa;line-height:1.85}
+.flow .h{color:#ddd;font-weight:700;display:block;margin-bottom:2px}
+.flow b{color:#f5c842}
+</style>
+</head>
+<body>
+
+<h2>⚡ 衝撃スラム（最終調整：表示を短めに）</h2>
+<p class="intro">A案「衝撃スラム」のまま、<b>着弾（ドンッ）が終わったら、すぐ文字が消える</b>ように表示時間を短くしました。<br>飛び込み・衝撃波・シェイクの<b>スピード感はそのまま</b>。文字がダラッと残らず、テンポよく消えます。<br>「▶ 再生」で確認してください。</p>
+
+<div class="card">
+  <div class="desc">高速で飛び込む → ドンッと着弾（衝撃波＋フラッシュ＋シェイク）→ 余韻を残してサッと消える</div>
+  <div class="stage"><div class="bowl shake"><div class="bowl-bg"></div>
+    <div class="die top"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die bl"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:19px;top:19px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die br"><span class="dot" style="left:8px;top:7px"></span><span class="dot" style="left:8px;top:19px"></span><span class="dot" style="left:8px;top:31px"></span><span class="dot" style="left:30px;top:7px"></span><span class="dot" style="left:30px;top:19px"></span><span class="dot" style="left:30px;top:31px"></span></div>
+    <div class="cutin"><div class="glow"></div><div class="flash"></div><div class="shock"></div>
+      <span class="streak s1"></span><span class="streak s2"></span><span class="streak s3"></span>
+      <div class="fly"><div class="ci-text">運命の一投</div></div></div>
+  </div></div>
+  <div class="result">シゴロ</div>
+  <div class="row"><button class="btn main" onclick="play()">▶ 再生</button><button class="btn" onclick="play()">🔁 別メッセージ</button></div>
+  <div class="flow">
+    <span class="h">時間の流れ（目安）</span>
+    0.0s 飛び込み開始 → <b>約0.4s 着弾「ドンッ」</b>（衝撃波・フラッシュ・シェイク）→ 少し余韻 → <b>約0.7sでスッと消える</b>
+  </div>
+</div>
+
+<script>
+const MSGS=["アツい！","ここで…！","来るか…？","勝負！","震えろ…！","魅せろ！",
+            "一発っ！","運命の一投","イチかバチか","気合いだッ","いけ…！","魅せ場だ"];
+let last=-1,T1=0,T2=0;
+function play(){
+  const ci=document.querySelector('.cutin'), tx=ci.querySelector('.ci-text'),
+        res=document.querySelector('.result'), shake=document.querySelector('.shake');
+  res.classList.remove('show');
+  let i; do{i=Math.floor(Math.random()*MSGS.length);}while(i===last&&MSGS.length>1);
+  last=i; tx.textContent=MSGS[i];
+  ci.classList.remove('show','out'); void ci.offsetWidth; ci.classList.add('show');
+  // 着弾シェイク
+  setTimeout(()=>{shake.classList.remove('kick'); void shake.offsetWidth; shake.classList.add('kick');},150);
+  clearTimeout(T1);clearTimeout(T2);
+  // 着弾が終わってからサッと消える（短め）
+  T1=setTimeout(()=>ci.classList.add('out'),680);
+  // 役の確定表示
+  T2=setTimeout(()=>res.classList.add('show'),1050);
+}
+window.play=play;
+setTimeout(play,400);
+</script>
+</body>
+</html>

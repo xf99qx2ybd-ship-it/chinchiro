@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>最新100件 出目履歴 — モック</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#0d0d0d;color:#f0f0f0;max-width:430px;margin:0 auto;padding:16px;}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.btn-g{background:rgba(255,255,255,.08);border:none;color:#f0f0f0;border-radius:8px;padding:8px 13px;font-size:14px;cursor:pointer;font-family:inherit;}
+.title{font-size:20px;font-weight:700;flex:1;}
+.btn-r{background:rgba(255,50,50,.15);border:none;color:#ff6666;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;}
+.meta{font-size:12px;color:#555;margin-bottom:14px;display:flex;gap:16px;}
+.meta b{color:#f5c842;font-weight:600;}
+
+/* 既存集計表（雰囲気だけ簡略表示） */
+.aggreg{border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);margin-bottom:22px;}
+.aggreg table{width:100%;border-collapse:collapse;}
+.aggreg td{padding:8px 10px;font-size:12px;border-top:1px solid rgba(255,255,255,.06);}
+.aggreg .h td{color:#888;background:rgba(255,255,255,.08);border:none;}
+.dim{color:#666;text-align:center;font-size:11px;padding:10px;}
+
+/* 新セクション：履歴 */
+.sec{font-size:14px;font-weight:900;margin:6px 0 4px;display:flex;align-items:center;gap:8px;}
+.sec .badge{font-size:10px;color:#9a8a55;background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);border-radius:6px;padding:2px 7px;font-weight:700;}
+.subnote{font-size:11px;color:#666;margin-bottom:10px;}
+
+.hist{border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+.hrow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.05);}
+.hrow:first-child{border-top:none;}
+.hrow:nth-child(even){background:rgba(255,255,255,.03);}
+.idx{font-size:11px;color:#555;width:34px;flex:none;font-family:monospace;text-align:right;}
+.dice{display:flex;gap:5px;flex:none;}
+.die{width:22px;height:22px;border-radius:5px;background:#fafafa;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.3);}
+.die .pip{position:absolute;width:4px;height:4px;border-radius:50%;background:#222;transform:translate(-50%,-50%);}
+.p-tl{left:28%;top:28%}.p-tr{left:72%;top:28%}.p-ml{left:28%;top:50%}.p-mr{left:72%;top:50%}
+.p-bl{left:28%;top:72%}.p-br{left:72%;top:72%}.p-c{left:50%;top:50%}
+.role{font-size:14px;font-weight:700;margin-left:auto;}
+.reroll{font-size:9px;color:#555;margin-left:6px;border:1px solid #333;border-radius:4px;padding:1px 4px;}
+</style></head>
+<body>
+  <div class="top">
+    <button class="btn-g">← 戻る</button>
+    <div class="title">📊 出目統計</div>
+    <button class="btn-r">リセット</button>
+  </div>
+  <div class="meta"><span>総投数: <b>1,254</b></span><span>総ターン: <b>820</b></span></div>
+
+  <!-- 既存の集計表（イメージ） -->
+  <div class="aggreg">
+    <table>
+      <tr class="h"><td>役</td><td style="text-align:center">回数</td><td style="text-align:center">出現率</td><td style="text-align:center">理論値</td></tr>
+      <tr><td>ピンゾロ</td><td style="text-align:center">7</td><td style="text-align:center;color:#f5c842">0.6%</td><td style="text-align:center;color:#555">0.5%</td></tr>
+      <tr><td colspan="4" class="dim">…（役ごとの集計表。ここは今までどおり）…</td></tr>
+    </table>
+  </div>
+
+  <!-- ★追加するセクション -->
+  <div class="sec">🎲 最新の出目履歴 <span class="badge">直近100件</span></div>
+  <div class="subnote">新しい順。ホームに戻るとこの履歴はリセットされます。</div>
+  <div class="hist" id="hist"></div>
+
+<script>
+const RC={pinzoro:'#f5c842',arashi:'#44ee88',shigoro:'#66bbff',me:'#f0f0f0',hifumi:'#ff5555',menashi:'#777',shonben:'#888'};
+const PIP={1:['p-c'],2:['p-tl','p-br'],3:['p-tl','p-c','p-br'],4:['p-tl','p-tr','p-bl','p-br'],5:['p-tl','p-tr','p-c','p-bl','p-br'],6:['p-tl','p-tr','p-ml','p-mr','p-bl','p-br']};
+function classify(d){const[a,b,c]=[...d].sort((x,y)=>x-y);
+ if(a===1&&b===1&&c===1)return['pinzoro','ピンゾロ！'];
+ if(a===b&&b===c)return['arashi','アラシ('+a+')'];
+ if(a===4&&b===5&&c===6)return['shigoro','シゴロ'];
+ if(a===1&&b===2&&c===3)return['hifumi','ヒフミ'];
+ if(a===b)return['me',c+'の目'];if(b===c)return['me',a+'の目'];if(a===c)return['me',b+'の目'];
+ return['menashi','目なし'];}
+function rnd(){return[0,0,0].map(()=>1+Math.floor(Math.random()*6));}
+// サンプル履歴を30件ほど生成（実際は最大100件たまる）
+const items=[];let n=1254;
+for(let i=0;i<28;i++){
+  const d=rnd();const[t,l]=classify(d);
+  const reroll = t==='menashi' && Math.random()<0.6; // 目なしは振り直し例として印
+  items.push({n:n--,dice:d,t,l,reroll});
+}
+// 50ごとピンゾロのサンプルを1件混ぜる
+items[3]={n:1251,dice:[1,1,1],t:'pinzoro',l:'ピンゾロ！',reroll:false,forced:true};
+const host=document.getElementById('hist');
+items.forEach(it=>{
+  const row=document.createElement('div');row.className='hrow';
+  const dice=it.dice.map(v=>'<div class="die">'+PIP[v].map(p=>'<span class="pip '+p+'"></span>').join('')+'</div>').join('');
+  row.innerHTML='<span class="idx">'+it.n+'</span><div class="dice">'+dice+'</div>'+
+    '<span class="role" style="color:'+RC[it.t]+'">'+it.l+'</span>'+
+    (it.reroll?'<span class="reroll">振り直し</span>':'');
+  host.appendChild(row);
+});
+</script>
+</body></html>

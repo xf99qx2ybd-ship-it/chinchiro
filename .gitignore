@@ -1,0 +1,14 @@
+# 依存ライブラリ（容量が大きいので上げない。GitHub側で自動インストールされる）
+node_modules
+
+# ビルド成果物（GitHub側で自動生成されるので上げない）
+dist
+tmp_build
+
+# エディタ・OS・ツールの作業ファイル
+.claude
+.DS_Store
+*.log
+npm-debug.log*
+.vscode
+.idea

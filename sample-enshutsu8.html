@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ カットイン UIリデザイン（3案）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#fff;font-family:sans-serif;padding:16px;max-width:460px;margin:0 auto}
+h2{color:#f5c842;font-size:18px;margin-bottom:4px}
+.intro{color:#999;font-size:12px;line-height:1.7;margin-bottom:16px}
+.intro b{color:#ddd}
+.card{background:#1b1b1b;border:1.5px solid #333;border-radius:16px;padding:14px;margin-bottom:18px}
+.ttl{font-size:14px;font-weight:800;color:#f5c842;margin-bottom:2px}
+.desc{font-size:11px;color:#888;margin-bottom:6px;line-height:1.6}
+
+.stage{position:relative;width:220px;height:220px;margin:8px auto 2px;overflow:hidden;border-radius:50%}
+.bowl{position:absolute;inset:0}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 30%,
+    #f8f8f6 0%,#eeece4 14%,#e0ddd5 28%,#cdc9c0 42%,
+    #b5b0a7 56%,#9e9990 68%,#8a857c 79%,#76716a 88%,#636059 100%);
+  box-shadow:inset 0 8px 22px rgba(0,0,0,.5),inset 0 -4px 10px rgba(255,255,255,.1),0 5px 28px rgba(0,0,0,.7);z-index:1}
+
+/* サイコロ（品の字・静止 / 4・5・6＝シゴロ） */
+.die{position:absolute;width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(145deg,#fffdf7,#f0ece2);
+  box-shadow:0 3px 7px rgba(0,0,0,.45),inset 0 1px 2px rgba(255,255,255,.7);z-index:3}
+.die.top{left:87px;top:60px}
+.die.bl {left:62px;top:118px}
+.die.br {left:112px;top:118px}
+.dot{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#333,#000)}
+.dot.r{background:radial-gradient(circle at 35% 30%,#ff3333,#cc0000)}
+
+/* ── カットイン共通 ── */
+.cutin{position:absolute;inset:0;z-index:8;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;opacity:0}
+.cutin.show{opacity:1}
+.cutin.out{opacity:0;transition:opacity .4s ease}
+.glow{position:absolute;left:50%;top:50%;width:210px;height:78px;transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse at center,rgba(8,5,0,.5) 0%,rgba(8,5,0,.22) 46%,transparent 72%);
+  filter:blur(2px);opacity:0}
+.cutin.show .glow{opacity:1;transition:opacity .3s}
+.slide{position:relative;opacity:0}
+.sway{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ci-text{font-size:29px;font-weight:900;letter-spacing:.06em;white-space:nowrap;line-height:1;
+  background:linear-gradient(168deg,#fff8e6 0%,#ffe49e 28%,#f3c155 52%,#fff0bf 70%,#e3a93f 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.6)) drop-shadow(0 2px 6px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(255,196,84,.55));}
+
+.cutin.show .slide{animation:slideIn .46s cubic-bezier(.2,.9,.25,1.18) both}
+.cutin.show .sway {animation:sway 2.9s ease-in-out .5s infinite}
+@keyframes slideIn{0%{opacity:0;transform:translateX(64px)}55%{opacity:1;transform:translateX(-7px)}100%{transform:translateX(0)}}
+@keyframes sway{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-2.5px) rotate(.5deg)}}
+
+/* B：細い帯（ライン） */
+.line{height:2px;width:150px;transform:scaleX(0);transform-origin:center;
+  background:linear-gradient(90deg,transparent,#ffd877 18%,#fff 50%,#ffd877 82%,transparent);
+  box-shadow:0 0 9px rgba(255,200,90,.85);border-radius:2px}
+.cutin.show .line{animation:lineIn .5s ease .14s both}
+@keyframes lineIn{0%{transform:scaleX(0);opacity:0}60%{opacity:1}100%{transform:scaleX(1);opacity:1}}
+
+/* C：斜めライン */
+.dline{position:absolute;left:-12%;width:124%;height:2px;opacity:0;
+  background:linear-gradient(90deg,transparent,rgba(255,222,150,.95) 28%,#fff 50%,rgba(255,222,150,.95) 72%,transparent);
+  box-shadow:0 0 10px rgba(255,200,90,.8);transform:skewY(-11deg)}
+.dline.l1{top:32%}.dline.l2{top:68%}
+.cutin.show .dline{animation:dlineIn .5s cubic-bezier(.2,.8,.25,1) .08s both}
+.cutin.show .dline.l2{animation-delay:.2s}
+@keyframes dlineIn{0%{opacity:0;transform:translateX(46px) skewY(-11deg)}100%{opacity:.92;transform:translateX(0) skewY(-11deg)}}
+
+.result{text-align:center;font-size:28px;font-weight:900;color:#f5c842;margin-top:6px;min-height:36px;letter-spacing:.06em;opacity:0;transition:opacity .3s}
+.result.show{opacity:1}
+.row{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.btn{background:#2a2a2a;color:#ccc;border:1px solid #444;border-radius:9px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:700}
+.btn:hover{background:#383838;color:#fff}
+.btn.main{background:#3a2c12;border-color:#6a521f;color:#f0d89a}
+.btn.main:hover{background:#4a3818}
+.pc{margin-top:10px;background:#141414;border:1px solid #2a2a2a;border-radius:9px;padding:9px 11px;font-size:11.5px;line-height:1.8}
+.pc .g{color:#7fd18a}.pc .b{color:#e0976b}
+</style>
+</head>
+<body>
+
+<h2>💬 カットイン UIリデザイン（3案）</h2>
+<p class="intro">表示の<b>タイミング・スライドイン・微揺れ・結果まで維持</b>はどの案も共通です。<br>違いは<b>見た目（帯のあり/なし・装飾）</b>だけ。文字を主役にした、落ち着いた高級感を狙っています。<br>各「▶ 再生」で確認できます。</p>
+
+<!-- A 帯なし -->
+<div class="card">
+  <div class="ttl">A案：帯なし（文字のみ）</div>
+  <div class="desc">帯を完全になくし、発光する金文字だけ。最もサイコロが見える。</div>
+  <div class="stage"><div class="bowl"><div class="bowl-bg"></div>
+    <div class="die top"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die bl"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:19px;top:19px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die br"><span class="dot" style="left:8px;top:7px"></span><span class="dot" style="left:8px;top:19px"></span><span class="dot" style="left:8px;top:31px"></span><span class="dot" style="left:30px;top:7px"></span><span class="dot" style="left:30px;top:19px"></span><span class="dot" style="left:30px;top:31px"></span></div>
+    <div class="cutin"><div class="glow"></div><div class="slide"><div class="sway"><div class="ci-text">運命の一投</div></div></div></div>
+  </div></div>
+  <div class="result">シゴロ</div>
+  <div class="row"><button class="btn main" onclick="play(0)">▶ 再生</button><button class="btn" onclick="play(0)">🔁 別メッセージ</button></div>
+  <div class="pc"><span class="g">◎</span> 一番サイコロが見える／最も上品で洗練。&nbsp; <span class="b">△</span> 明るい背景だと少し視認性が弱め・インパクトは控えめ。</div>
+</div>
+
+<!-- B 細い帯 -->
+<div class="card">
+  <div class="ttl">B案：細い帯（下にライン）</div>
+  <div class="desc">文字の下に細く光るラインを1本。締まって見え、上品さと存在感を両立。</div>
+  <div class="stage"><div class="bowl"><div class="bowl-bg"></div>
+    <div class="die top"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die bl"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:19px;top:19px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die br"><span class="dot" style="left:8px;top:7px"></span><span class="dot" style="left:8px;top:19px"></span><span class="dot" style="left:8px;top:31px"></span><span class="dot" style="left:30px;top:7px"></span><span class="dot" style="left:30px;top:19px"></span><span class="dot" style="left:30px;top:31px"></span></div>
+    <div class="cutin"><div class="glow"></div><div class="slide"><div class="sway"><div class="ci-text">運命の一投</div><div class="line"></div></div></div></div>
+  </div></div>
+  <div class="result">シゴロ</div>
+  <div class="row"><button class="btn main" onclick="play(1)">▶ 再生</button><button class="btn" onclick="play(1)">🔁 別メッセージ</button></div>
+  <div class="pc"><span class="g">◎</span> 文字が締まって読みやすい／上品さと迫力のバランス◎。&nbsp; <span class="b">△</span> ライン分わずかに装飾的。</div>
+</div>
+
+<!-- C 斜めライン -->
+<div class="card">
+  <div class="ttl">C案：斜めライン（スピード感）</div>
+  <div class="desc">文字の上下に細い斜めラインを配置。ゲーセンのようなスピード感とキレ。</div>
+  <div class="stage"><div class="bowl"><div class="bowl-bg"></div>
+    <div class="die top"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die bl"><span class="dot" style="left:8px;top:8px"></span><span class="dot" style="left:30px;top:8px"></span><span class="dot" style="left:19px;top:19px"></span><span class="dot" style="left:8px;top:30px"></span><span class="dot" style="left:30px;top:30px"></span></div>
+    <div class="die br"><span class="dot" style="left:8px;top:7px"></span><span class="dot" style="left:8px;top:19px"></span><span class="dot" style="left:8px;top:31px"></span><span class="dot" style="left:30px;top:7px"></span><span class="dot" style="left:30px;top:19px"></span><span class="dot" style="left:30px;top:31px"></span></div>
+    <div class="cutin"><div class="glow"></div><div class="dline l1"></div><div class="dline l2"></div><div class="slide"><div class="sway"><div class="ci-text">運命の一投</div></div></div></div>
+  </div></div>
+  <div class="result">シゴロ</div>
+  <div class="row"><button class="btn main" onclick="play(2)">▶ 再生</button><button class="btn" onclick="play(2)">🔁 別メッセージ</button></div>
+  <div class="pc"><span class="g">◎</span> 動きとキレが出てカッコいい／ゲームらしい高揚感。&nbsp; <span class="b">△</span> やや主張強め・線がサイコロに少しかかる。</div>
+</div>
+
+<script>
+const MSGS=["アツい！","ここで…！","来るか…？","勝負！","震えろ…！","魅せろ！",
+            "一発っ！","運命の一投","イチかバチか","気合いだッ","いけ…！","魅せ場だ"];
+const last=[-1,-1,-1],T=[0,0,0];
+function play(i){
+  const card=document.querySelectorAll('.card')[i];
+  const ci=card.querySelector('.cutin'), tx=card.querySelector('.ci-text'), res=card.querySelector('.result');
+  res.classList.remove('show');
+  let idx; do{idx=Math.floor(Math.random()*MSGS.length);}while(idx===last[i]&&MSGS.length>1);
+  last[i]=idx; tx.textContent=MSGS[idx];
+  ci.classList.remove('show','out'); void ci.offsetWidth; ci.classList.add('show');
+  clearTimeout(T[i]);
+  // 結果が出るまで表示を維持 → 結果と同時にスッと消える
+  T[i]=setTimeout(()=>{res.classList.add('show'); ci.classList.add('out');},1500);
+}
+window.play=play;
+setTimeout(()=>play(0),400);
+</script>
+</body>
+</html>

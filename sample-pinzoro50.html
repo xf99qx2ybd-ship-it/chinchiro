@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>50回ごとピンゾロ — 動作モック</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+    background:#0d0d0d;color:#f0f0f0;max-width:430px;margin:0 auto;padding:18px 16px 40px;min-height:100vh;}
+  h1{font-size:17px;font-weight:900;text-align:center;margin-bottom:4px;}
+  .sub{font-size:11px;color:#888;text-align:center;margin-bottom:16px;line-height:1.5;}
+
+  /* 累計カウンター（内部値。プレイヤーには見せない想定だが、モック確認用に表示） */
+  .counter{background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);
+    border-radius:14px;padding:12px;text-align:center;margin-bottom:8px;}
+  .counter .lbl{font-size:10px;color:#9a8a55;letterSpacing:.14em;font-weight:900;}
+  .counter .num{font-size:40px;font-weight:900;color:#f5c842;line-height:1.1;font-family:monospace;}
+  .counter .next{font-size:11px;color:#888;margin-top:2px;}
+
+  .devnote{font-size:10px;color:#c98;background:rgba(200,150,80,.08);
+    border:1px dashed rgba(200,150,80,.4);border-radius:8px;padding:7px 9px;margin-bottom:14px;line-height:1.5;}
+
+  /* お椀 */
+  .bowl{position:relative;width:100%;aspect-ratio:1;border-radius:50%;margin:6px 0 10px;
+    background:radial-gradient(circle at 38% 32%,#f4f1ea,#d8d2c4 60%,#b7b0a0);
+    box-shadow:inset 0 8px 30px rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;}
+  .dice-row{display:flex;gap:14px;}
+  .die{width:46px;height:46px;border-radius:9px;background:#fafafa;
+    box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 0 0 1px rgba(0,0,0,.06);
+    position:relative;}
+  .die .pip{position:absolute;width:8px;height:8px;border-radius:50%;background:#222;
+    transform:translate(-50%,-50%);}
+  /* pip 位置（%）*/
+  .p-tl{left:28%;top:28%;}.p-tr{left:72%;top:28%;}
+  .p-ml{left:28%;top:50%;}.p-mr{left:72%;top:50%;}
+  .p-bl{left:28%;top:72%;}.p-br{left:72%;top:72%;}
+  .p-c{left:50%;top:50%;}.p-tc{left:50%;top:28%;}.p-bc{left:50%;top:72%;}
+
+  .result{text-align:center;min-height:44px;margin-bottom:14px;}
+  .result .role{font-size:34px;font-weight:900;line-height:1.1;}
+  .result.pin .role{color:#f5c842;text-shadow:0 0 22px rgba(245,200,66,.6);}
+  .result .forced{font-size:11px;color:#f5c842;margin-top:3px;font-weight:700;}
+
+  .btns{display:flex;flex-direction:column;gap:9px;}
+  button{font-family:inherit;font-weight:700;border:none;border-radius:12px;padding:13px;
+    font-size:15px;cursor:pointer;}
+  .b-roll{background:#f5c842;color:#1a1500;}
+  .b-roll:active{transform:scale(.98);}
+  .b-ff{background:#2a2a2a;color:#ddd;border:1px solid #444;}
+  .b-reset{background:transparent;color:#888;border:1px solid #333;font-size:13px;padding:10px;}
+
+  .log{margin-top:16px;background:#141414;border:1px solid #222;border-radius:10px;
+    padding:10px;font-size:11px;color:#aaa;line-height:1.7;max-height:160px;overflow:auto;}
+  .log .pin{color:#f5c842;font-weight:700;}
+</style>
+</head>
+<body>
+  <h1>🎲 50回ごとに必ずピンゾロ</h1>
+  <p class="sub">サイコロを振った累計回数を数え、50・100・150…回目<br>ちょうどのスローで強制的にピンゾロ(1-1-1)を出します。</p>
+
+  <div class="counter">
+    <div class="lbl">サイコロを振った累計回数（内部値）</div>
+    <div class="num" id="count">0</div>
+    <div class="next" id="next">次のピンゾロまで あと50回</div>
+  </div>
+  <div class="devnote">
+    ※ このカウンターと下のログは<b>確認用の表示</b>です。本番ではプレイヤーに「50回ごと」とは一切見せません（裏で数えるだけ）。
+  </div>
+
+  <div class="bowl">
+    <div class="dice-row" id="dice"></div>
+  </div>
+  <div class="result" id="result"><div class="role" style="color:#666;font-size:18px;">下のボタンで振ってください</div></div>
+
+  <div class="btns">
+    <button class="b-roll" id="roll">🎲 1回振る</button>
+    <button class="b-ff" id="ff">⏩ 49回ぶん早送り（ピンゾロ直前まで）</button>
+    <button class="b-reset" id="reset">🏠 ホームに戻る（累計リセット）</button>
+  </div>
+
+  <div class="log" id="log"></div>
+
+<script>
+const PINZORO_EVERY = 50;
+let count = 0;            // ホームに戻るまでの累計スロー回数
+const SHONBEN_RATE = 0.01;
+
+const PIP = {
+  1:['p-c'], 2:['p-tl','p-br'], 3:['p-tl','p-c','p-br'],
+  4:['p-tl','p-tr','p-bl','p-br'], 5:['p-tl','p-tr','p-c','p-bl','p-br'],
+  6:['p-tl','p-tr','p-ml','p-mr','p-bl','p-br'],
+};
+function classify(d){
+  const [a,b,c]=[...d].sort((x,y)=>x-y);
+  if(a===1&&b===1&&c===1) return 'ピンゾロ！';
+  if(a===b&&b===c) return 'アラシ('+a+')';
+  if(a===4&&b===5&&c===6) return 'シゴロ';
+  if(a===1&&b===2&&c===3) return 'ヒフミ';
+  if(a===b) return c+'の目';
+  if(b===c) return a+'の目';
+  if(a===c) return b+'の目';
+  return '目なし';
+}
+function renderDice(d){
+  const el=document.getElementById('dice'); el.innerHTML='';
+  d.forEach(v=>{
+    const die=document.createElement('div'); die.className='die';
+    PIP[v].forEach(p=>{const pip=document.createElement('div');pip.className='pip '+p;die.appendChild(pip);});
+    el.appendChild(die);
+  });
+}
+function updateCounter(){
+  document.getElementById('count').textContent=count;
+  const rem = PINZORO_EVERY - (count % PINZORO_EVERY);
+  document.getElementById('next').textContent =
+    (count>0 && count%PINZORO_EVERY===0) ? 'いま'+count+'回目 → ピンゾロ確定！' : ('次のピンゾロまで あと'+rem+'回');
+}
+function addLog(msg, isPin){
+  const log=document.getElementById('log');
+  const line=document.createElement('div');
+  if(isPin) line.className='pin';
+  line.textContent=msg; log.prepend(line);
+}
+
+// ── 本番に入れる予定のロジックの核 ──
+// 1スローごとに count を +1 し、50の倍数なら出目を 1-1-1 に固定（ションベン抽選も無効化）。
+function doRoll(){
+  count++;
+  const forced = (count % PINZORO_EVERY === 0);
+  let dice, shonben=false;
+  if(forced){
+    dice=[1,1,1];               // ★ 強制ピンゾロ（ションベンも飛ばす）
+  } else {
+    shonben = Math.random() < SHONBEN_RATE;
+    dice=[0,0,0].map(()=>1+Math.floor(Math.random()*6));
+  }
+  renderDice(dice);
+  const role = shonben ? 'ションベン' : classify(dice);
+  const res=document.getElementById('result');
+  res.className='result'+(forced?' pin':'');
+  res.innerHTML='<div class="role"'+(forced?'':' style="font-size:26px;"')+'>'+role+'</div>'
+    +(forced?'<div class="forced">▲ 50回ごとの自動ピンゾロ（内部処理）</div>':'');
+  updateCounter();
+  addLog((forced?'★ ':'')+count+'回目: '+(shonben?'ションベン':dice.join('-')+' → '+role), forced);
+}
+
+document.getElementById('roll').onclick=doRoll;
+document.getElementById('ff').onclick=()=>{
+  // ピンゾロの「ひとつ手前」まで一気に進める（デモ用）
+  const target = (Math.floor(count/PINZORO_EVERY)+1)*PINZORO_EVERY - 1;
+  while(count < target) doRoll();
+};
+document.getElementById('reset').onclick=()=>{
+  count=0; updateCounter();
+  document.getElementById('dice').innerHTML='';
+  document.getElementById('result').className='result';
+  document.getElementById('result').innerHTML='<div class="role" style="color:#666;font-size:18px;">ホームに戻りました（累計0）</div>';
+  document.getElementById('log').innerHTML='';
+  addLog('🏠 ホームに戻ったので累計リセット');
+};
+updateCounter();
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ サイコロサンプル（重なり修正版）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#fff;font-family:sans-serif;padding:16px;max-width:440px;margin:0 auto}
+h2{color:#f5c842;margin-bottom:4px;font-size:18px}
+p{color:#999;font-size:12px;margin-bottom:16px;line-height:1.6}
+.card{background:#1e1e1e;border:1.5px solid #333;border-radius:16px;padding:12px;margin-bottom:16px}
+.label{font-size:14px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.desc{font-size:11px;color:#777;margin-bottom:10px}
+.badge{background:#f5c842;color:#111;border-radius:6px;padding:1px 10px;font-size:13px;font-weight:900}
+.btn{display:block;margin:10px auto 0;background:#2e2e2e;color:#bbb;border:1px solid #444;border-radius:8px;padding:6px 28px;font-size:13px;cursor:pointer}
+.btn:hover{background:#3a3a3a;color:#fff}
+
+/* ─── お椀 ─── */
+.bowl{position:relative;width:220px;height:220px;margin:0 auto}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 30%,
+    #f8f8f6 0%,#eeece4 14%,#e0ddd5 28%,#cdc9c0 42%,
+    #b5b0a7 56%,#9e9990 68%,#8a857c 79%,#76716a 88%,#636059 100%);
+  box-shadow:inset 0 8px 22px rgba(0,0,0,.5),inset 0 -4px 10px rgba(255,255,255,.1),0 5px 28px rgba(0,0,0,.7)}
+
+/* ─── 構造（位置=間隔／大きさ／回転 を別々に）─── */
+.diegroup{position:absolute;inset:0}
+.die-outer{position:absolute;transform:translate(-50%,-50%)}
+/* 初期表示用の最終位置（重ならない品の字）*/
+.die-outer.top{left:50%;top:44%}
+.die-outer.bl {left:42%;top:57%}
+.die-outer.br {left:58%;top:57%}
+.die-scale{transform-origin:50% 50%}
+.cs{width:46px;height:46px;perspective:300px;perspective-origin:50% -30%}
+.cube{width:46px;height:46px;position:relative;transform-style:preserve-3d}
+.face{position:absolute;width:46px;height:46px;border-radius:9px;border:1px solid rgba(180,165,145,.25);backface-visibility:hidden;overflow:hidden}
+.f-top{transform:rotateX( 90deg) translateZ(23px);background:linear-gradient(145deg,#fffdf7,#f5f0e5)}
+.f-bot{transform:rotateX(-90deg) translateZ(23px);background:linear-gradient(145deg,#d5d0c5,#c8c3b8)}
+.f-frt{transform:             translateZ(23px);background:linear-gradient(145deg,#faf7f0,#f0ece2)}
+.f-bak{transform:rotateY(180deg) translateZ(23px);background:linear-gradient(145deg,#e6e3db,#dad6ce)}
+.f-rgt{transform:rotateY( 90deg) translateZ(23px);background:linear-gradient(145deg,#f0ede5,#e4e0d8)}
+.f-lft{transform:rotateY(-90deg) translateZ(23px);background:linear-gradient(145deg,#e8e5dd,#dcd8d0)}
+
+/* ─── 目 ─── */
+.dot{position:absolute;width:18%;height:18%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#333,#000)}
+.r{background:radial-gradient(circle at 35% 30%,#ff3333,#cc0000)!important}
+.p1 .dot:nth-child(1){top:41%;left:41%}
+.p2 .dot:nth-child(1){top:15%;left:15%} .p2 .dot:nth-child(2){bottom:15%;right:15%}
+.p3 .dot:nth-child(1){top:13%;left:13%} .p3 .dot:nth-child(2){top:41%;left:41%} .p3 .dot:nth-child(3){bottom:13%;right:13%}
+.p4 .dot:nth-child(1){top:15%;left:15%} .p4 .dot:nth-child(2){top:15%;right:15%} .p4 .dot:nth-child(3){bottom:15%;left:15%} .p4 .dot:nth-child(4){bottom:15%;right:15%}
+.p5 .dot:nth-child(1){top:13%;left:13%} .p5 .dot:nth-child(2){top:13%;right:13%} .p5 .dot:nth-child(3){top:41%;left:41%} .p5 .dot:nth-child(4){bottom:13%;left:13%} .p5 .dot:nth-child(5){bottom:13%;right:13%}
+.p6 .dot:nth-child(1){top:13%;left:15%} .p6 .dot:nth-child(2){top:13%;right:15%} .p6 .dot:nth-child(3){top:41%;left:15%} .p6 .dot:nth-child(4){top:41%;right:15%} .p6 .dot:nth-child(5){bottom:13%;left:15%} .p6 .dot:nth-child(6){bottom:13%;right:15%}
+
+/* ────── 回転（4番と同じ sp3）────── */
+@keyframes sp3{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(1440deg) rotateY(1080deg) rotateZ(0)}}
+
+/* ────── ① 位置（間隔）：2番の広がりで固定（最初60%→最後16%・重ならない）────── */
+@keyframes posTopW{0%{left:50%;top:15%}100%{left:50%;top:44%}}
+@keyframes posBlW {0%{left:20%;top:80%}100%{left:42%;top:57%}}
+@keyframes posBrW {0%{left:80%;top:80%}100%{left:58%;top:57%}}
+
+/* ────── ② 大きさ：大 → 小（落下＝奥行き感。極端さ3段階）────── */
+/* 最初2.4倍 */
+@keyframes dsz1{0%{transform:scale(2.40)}82%{transform:scale(0.50)}91%{transform:scale(0.60)}100%{transform:scale(0.56)}}
+/* 最初2.6倍 */
+@keyframes dsz2{0%{transform:scale(2.60)}82%{transform:scale(0.48)}91%{transform:scale(0.59)}100%{transform:scale(0.55)}}
+/* 最初2.75倍（ほぼ限界・一番ダイナミック）*/
+@keyframes dsz3{0%{transform:scale(2.75)}82%{transform:scale(0.46)}91%{transform:scale(0.58)}100%{transform:scale(0.54)}}
+
+/* ────── ③ 落下（上から高めに落とす）────── */
+@keyframes dropN{0%{transform:translateY(-34px);opacity:0}7%{opacity:1}82%{transform:translateY(7px)}91%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+
+/* ══════ バリエーション（2番の広がり・1.25s・sp3。大きさの極端さ違い）══════ */
+.v1 .diegroup{animation:dropN 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v1 .die-outer.top{animation:posTopW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v1 .die-outer.bl{animation:posBlW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v1 .die-outer.br{animation:posBrW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v1 .die-scale{animation:dsz1 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v1 .cube{animation:sp3 1.25s cubic-bezier(.3,.1,.3,1) both}
+
+.v2 .diegroup{animation:dropN 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v2 .die-outer.top{animation:posTopW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v2 .die-outer.bl{animation:posBlW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v2 .die-outer.br{animation:posBrW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v2 .die-scale{animation:dsz2 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v2 .cube{animation:sp3 1.25s cubic-bezier(.3,.1,.3,1) both}
+
+.v3 .diegroup{animation:dropN 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v3 .die-outer.top{animation:posTopW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v3 .die-outer.bl{animation:posBlW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v3 .die-outer.br{animation:posBrW 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v3 .die-scale{animation:dsz3 1.25s cubic-bezier(.3,.1,.3,1) both}
+.v3 .cube{animation:sp3 1.25s cubic-bezier(.3,.1,.3,1) both}
+
+</style>
+</head>
+<body>
+
+<h2>🎲 2番ベース・大きさの変化を極端に（落下感UP）</h2>
+<p>2番の広がり方はそのまま。<br>サイコロの<b>大きさの変化を極端に</b>して、上から落ちてくる奥行き感を強めました（最初うんと大きく→最後しっかり小さく）。最後は重なりません。「▶ リプレイ」で確認してね！</p>
+
+<div id="cards"></div>
+
+<script>
+const VARIANTS = [
+  {v:'v1', label:'① 大きさ変化 強（始2.4倍）', desc:'2番の広がり＋最初2.4倍→最後0.56倍'},
+  {v:'v2', label:'② 大きさ変化 もっと強（始2.6倍）', desc:'2番の広がり＋最初2.6倍→最後0.55倍'},
+  {v:'v3', label:'③ 大きさ変化 最大（始2.75倍）', desc:'2番の広がり＋最初2.75倍→最後0.54倍・一番落下感'},
+];
+
+function pip(n, red1=false) {
+  const counts = {1:1,2:2,3:3,4:4,5:5,6:6};
+  const dots = Array(counts[n]).fill(0).map(()=>`<div class="dot${(n===1&&red1)?' r':''}"></div>`).join('');
+  return `<div class="p${n}">${dots}</div>`;
+}
+
+function cube(topVal, frtVal, rgtVal) {
+  return `<div class="cs"><div class="cube">
+    <div class="face f-top">${pip(topVal, topVal===1)}</div>
+    <div class="face f-bot">${pip(7-topVal)}</div>
+    <div class="face f-frt">${pip(frtVal, frtVal===1)}</div>
+    <div class="face f-bak">${pip(7-frtVal)}</div>
+    <div class="face f-rgt">${pip(rgtVal, rgtVal===1)}</div>
+    <div class="face f-lft">${pip(7-rgtVal)}</div>
+  </div></div>`;
+}
+
+function die(cls, t, f, r) {
+  return `<div class="die-outer ${cls}"><div class="die-scale">${cube(t,f,r)}</div></div>`;
+}
+
+function bowl(vClass, bid) {
+  return `<div class="bowl ${vClass}" id="${bid}">
+    <div class="bowl-bg"></div>
+    <div class="diegroup">
+      ${die('top',3,2,4)}
+      ${die('bl',5,3,2)}
+      ${die('br',1,4,3)}
+    </div>
+  </div>`;
+}
+
+const cards = document.getElementById('cards');
+VARIANTS.forEach(({v,label,desc},i)=>{
+  const n = i+1;
+  const bid = 'b'+n;
+  cards.innerHTML += `<div class="card">
+    <div class="label"><span class="badge">${n}</span> ${label}</div>
+    <div class="desc">${desc}</div>
+    ${bowl(v, bid)}
+    <button class="btn" onclick="replay('${bid}','${v}')">▶ リプレイ</button>
+  </div>`;
+});
+
+function replay(id, cls) {
+  const el = document.getElementById(id);
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+}
+</script>
+</body>
+</html>

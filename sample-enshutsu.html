@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ 期待感演出サンプル（火花強化 v4）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0b0c;color:#fff;font-family:sans-serif;padding:16px;max-width:440px;margin:0 auto}
+h2{color:#f5c842;margin-bottom:4px;font-size:18px}
+.lead{color:#999;font-size:12px;margin-bottom:18px;line-height:1.7}
+.card{background:#161616;border:1.5px solid #2a2a2a;border-radius:18px;padding:16px;margin-bottom:18px}
+.ttl{font-size:13px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.sub{font-size:11px;color:#888;margin-bottom:10px;line-height:1.6}
+.tag{border-radius:6px;padding:1px 9px;font-size:11px;font-weight:900}
+.tag-f{background:#ff6a1a;color:#1a0800}.tag-c{background:#5fa8ff;color:#04122b}
+.tag-fc{background:#f5c842;color:#1a0800}.tag-n{background:#444;color:#bbb}
+
+.stage{position:relative;width:240px;height:300px;margin:6px auto 4px}
+.bowl{position:absolute;left:0;top:60px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(ellipse at 40% 34%,#fafaf8 0%,#f2efe8 11%,#eae6de 25%,#ddd9d0 42%,#cec9c0 56%,#b2aea4 68%,#8c887e 78%,#5a5650 88%,#262220 96%,#0c0a08 100%);
+  box-shadow:0 16px 40px rgba(0,0,0,.85),inset 0 10px 30px rgba(255,255,255,.5),inset 0 -16px 44px rgba(0,0,0,.4);
+  overflow:hidden;z-index:2}
+.bowl .gloss{position:absolute;width:36%;height:18%;top:12%;left:22%;background:radial-gradient(ellipse,rgba(255,255,255,.38),transparent 70%);border-radius:50%;filter:blur(4px)}
+#fireCanvas{position:absolute;left:0;top:0;width:240px;height:300px;z-index:3;pointer-events:none}
+.dieWrap{position:absolute;left:0;top:60px;width:240px;height:240px;z-index:4;pointer-events:none}
+.die{position:absolute;width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(145deg,#fffdf7,#ece7da);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.9),0 3px 6px rgba(0,0,0,.5);
+  transform:translate(-50%,-50%)}
+.die.d1{left:50%;top:40%}.die.d2{left:38%;top:60%}.die.d3{left:62%;top:60%}
+.pip{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#444,#000);transform:translate(-50%,-50%)}
+.pip.red{background:radial-gradient(circle at 35% 30%,#ff4444,#bb0000)}
+/* 火花レイヤー（サイコロより前にも散る）*/
+#sparkFront{position:absolute;left:0;top:0;width:240px;height:300px;z-index:5;pointer-events:none}
+
+.cutin{position:absolute;left:-16px;right:-16px;top:66px;z-index:7;pointer-events:none;display:flex;justify-content:center;opacity:0}
+.cutin.on{animation:cutIn .3s cubic-bezier(.2,1.3,.4,1) forwards}
+.cutin.off{animation:cutOut .35s ease-in forwards}
+.cutin .ribbon{background:linear-gradient(100deg,rgba(20,20,20,0) 0%,rgba(20,20,20,.92) 14%,rgba(40,30,12,.95) 50%,rgba(20,20,20,.92) 86%,rgba(20,20,20,0) 100%);
+  border-top:1px solid rgba(245,200,66,.55);border-bottom:1px solid rgba(245,200,66,.55);
+  padding:7px 30px;color:#fff;font-size:19px;font-weight:900;letter-spacing:.06em;white-space:nowrap;
+  text-shadow:0 0 14px rgba(245,200,66,.8),0 2px 4px #000;transform:skewX(-8deg)}
+.cutin .ribbon b{display:inline-block;transform:skewX(8deg)}
+.cutin.hot .ribbon{border-color:#ff7a2a;text-shadow:0 0 16px #ff7a2a,0 2px 4px #000}
+@keyframes cutIn{0%{opacity:0;transform:translateX(40px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes cutOut{to{opacity:0;transform:translateX(-30px)}}
+
+.result{text-align:center;font-size:30px;font-weight:900;margin-top:2px;min-height:38px;opacity:0;letter-spacing:.04em}
+.result.show{animation:reveal .5s cubic-bezier(.2,1.5,.5,1) forwards}
+@keyframes reveal{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+.g{color:#ffd24a}.n{color:#cfcfcf}.b{color:#ff6a6a}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.btn{background:#2a2a2a;color:#ddd;border:1px solid #444;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.btn:hover{background:#383838;color:#fff}
+.btn.a{border-color:#ff6a1a55}.btn.b{border-color:#5fa8ff55}.btn.c{border-color:#f5c84255}
+.btn.live{border-color:#ff3333;color:#ffcaca}
+.note{font-size:10.5px;color:#666;margin-top:10px;line-height:1.6;text-align:center}
+.flow{font-size:11.5px;color:#bbb;line-height:1.9;background:#101010;border:1px solid #242424;border-radius:10px;padding:10px 12px;margin-top:10px}
+.flow b{color:#f5c842}
+</style>
+</head>
+<body>
+
+<h2>🎲 期待感演出サンプル <span style="font-size:12px;color:#ff8a3a">／ 火花強化 v4</span></h2>
+<p class="lead">底の丸い光を削除し、炎は控えめに。代わりに <b>火花（火の粉）を主役</b> に強化。<br>
+方向・大きさ・明るさ・消える速さをランダム化し、炎の周囲に自然に飛ばしています。<br>
+狙いは「炎が燃えている」より <b>「何か特別なエネルギーが出ている」</b>。</p>
+
+<div class="card">
+  <div class="ttl"><span class="tag tag-n">DEMO</span> 体験サンプル</div>
+  <div class="sub">「🔍 連続表示」で火花の質感をじっくり確認できます。他ボタンは結果まで一連で流れます。</div>
+
+  <div class="stage" id="stage">
+    <div class="bowl" id="bowl"><div class="gloss"></div></div>
+    <canvas id="fireCanvas"></canvas>
+    <div class="dieWrap" id="dieWrap"><div class="die d1"></div><div class="die d2"></div><div class="die d3"></div></div>
+    <canvas id="sparkFront"></canvas>
+    <div class="cutin" id="cutin"><div class="ribbon"><b id="cutinText">勝負だ！</b></div></div>
+  </div>
+
+  <div class="result" id="result">　</div>
+
+  <div class="row">
+    <button class="btn live" onclick="toggleLive()" id="liveBtn">🔍 連続表示 ON</button>
+    <button class="btn a" onclick="play('fire')">🔥 炎のみ</button>
+    <button class="btn b" onclick="play('cutin')">💬 カットインのみ</button>
+    <button class="btn c" onclick="play('both')">🔥💬 炎＋カットイン</button>
+    <button class="btn" onclick="play('none')">演出なし</button>
+  </div>
+  <div class="note">※炎は色／大きさ違いなし。サイコロは常に手前（主役）。結果が出ると消えます。</div>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence id="heatT" type="fractalNoise" baseFrequency="0.016 0.06" numOctaves="2" seed="2" result="n"/>
+    <feDisplacementMap id="heatD" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="heatBg" x="-15%" y="-15%" width="130%" height="130%">
+    <feTurbulence id="heatBgT" type="fractalNoise" baseFrequency="0.01 0.035" numOctaves="2" seed="7" result="m"/>
+    <feDisplacementMap id="heatBgD" in="SourceGraphic" in2="m" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div class="card"><div class="ttl"><span class="tag tag-f">A</span> 炎のみ（約20%）</div>
+  <div class="flow">タップ →（振る）→ <b>サイコロが炎をまとい、火花が舞う</b> → 着地 → 役確定 → 消える</div></div>
+<div class="card"><div class="ttl"><span class="tag tag-c">B</span> カットインのみ（約8%）</div>
+  <div class="flow">タップ →（振る）→ <b>短いメッセージが上から差し込み結果まで残る</b> → 役確定 → 消滅</div></div>
+<div class="card"><div class="ttl"><span class="tag tag-fc">C</span> 炎＋カットイン＝激アツ（約2%）</div>
+  <div class="flow">タップ →（振る）→ <b>炎＋火花＋メッセージ同時発生</b> → 着地 → 役確定 → フェードアウト<br>
+  <span style="color:#888">※それでも稀に悪い役。「両方来たのに負けた」体験も残す。</span></div></div>
+
+<script>
+/* ===== サイコロ ===== */
+const PIPS={1:[[50,50]],2:[[30,30],[70,70]],3:[[28,28],[50,50],[72,72]],
+4:[[30,30],[70,30],[30,70],[70,70]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
+6:[[30,25],[70,25],[30,50],[70,50],[30,75],[70,75]]};
+const dice=[...document.querySelectorAll('.die')];
+function drawDie(el,n){el.innerHTML='';PIPS[n].forEach(([x,y])=>{const p=document.createElement('div');p.className='pip'+(n===1?' red':'');p.style.left=x+'%';p.style.top=y+'%';el.appendChild(p);});}
+function randDice(){dice.forEach(d=>drawDie(d,1+Math.floor(Math.random()*6)));}
+
+/* ===== Canvas ===== */
+const W=240,H=300,DPR=Math.min(window.devicePixelRatio||1,2);
+function setup(id){const c=document.getElementById(id),x=c.getContext('2d');c.width=W*DPR;c.height=H*DPR;x.scale(DPR,DPR);return x;}
+const ctx=setup('fireCanvas'), sctx=setup('sparkFront');
+function sprite(r,g,b){const s=64,c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');
+  const gr=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  gr.addColorStop(0,`rgba(${r},${g},${b},1)`);gr.addColorStop(.45,`rgba(${r},${g},${b},.45)`);gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+  x.fillStyle=gr;x.fillRect(0,0,s,s);return c;}
+const SP_CORE=sprite(255,255,236),SP_HOT=sprite(255,214,130),SP_MID=sprite(255,138,42),SP_COOL=sprite(214,52,14);
+const SP_SMOKE=sprite(120,116,112);
+/* 火花の微妙な色差：白・黄・橙 */
+const SPK=[{s:sprite(255,255,248),l:'255,255,235'},  // 白
+           {s:sprite(255,236,150),l:'255,230,150'},  // 黄
+           {s:sprite(255,170,78),l:'255,168,80'}];    // 橙
+function sparkCol(){const r=Math.random();return r<.30?SPK[0]:r<.74?SPK[1]:SPK[2];}
+
+/* 発生源 */
+const BASE=[{x:120,y:156},{x:91,y:204},{x:149,y:204}];
+const FLAME={cx:120,baseY:198,top:96,wid:34};
+const CLU={cx:120,cy:186}; // サイコロ塊の中心（周囲全体から火花を出す）
+let fire=[],smoke=[],sparks=[],sparksF=[];
+let burning=false,intensity=0,raf=null,t0=0;
+let wind=0,windTarget=0,windNext=0;
+
+/* ---- 炎（控えめ）---- */
+function spawnFire(n){for(let k=0;k<n;k++){const b=BASE[(Math.random()*BASE.length)|0];
+  fire.push({x:b.x+(Math.random()-.5)*15,y:b.y+(Math.random()-.5)*8,vx:(Math.random()-.5)*.5,vy:-(1.1+Math.random()*1.3),
+    life:1,decay:.014+Math.random()*.014,size:9+Math.random()*8,wob:Math.random()*6.28,turb:.5+Math.random()});}}
+function spawnSmoke(){smoke.push({x:120+(Math.random()-.5)*36,y:120+(Math.random()-.5)*10,vx:(Math.random()-.5)*.3+wind*.4,
+  vy:-(.5+Math.random()*.5),life:1,decay:.007+Math.random()*.006,size:16+Math.random()*14});}
+
+/* ---- 火花（主役・鍛冶屋／導火線イメージ・周囲全体から）---- */
+function makeSpark(){
+  // サイコロ塊の「周囲全体」から発生（少し上に偏重）
+  const ang=Math.random()*Math.PI*2;
+  const rad=22+Math.random()*36;
+  const ux=Math.cos(ang), uy=Math.sin(ang)*0.9-0.22;
+  const x=CLU.cx+ux*rad+wind*4, y=CLU.cy+uy*rad;
+  const col=sparkCol();
+  const roll=Math.random();
+  let vx,vy,decay,size,bright,trail,g;
+  if(roll<0.55){            // sputter：生まれてすぐ消える微細な火花（導火線のジリジリ）
+    vx=(Math.random()-.5)*1.4+wind*.5; vy=-(0.2+Math.random()*1.3);
+    decay=.07+Math.random()*.13; size=.7+Math.random()*1.6; bright=.55+Math.random()*.45; trail=false; g=.02+Math.random()*.03;
+  }else if(roll<0.85){      // shoot：鍛冶屋の火花（外へ直線的に飛び尾を引く）
+    const a=ang+(Math.random()-.5)*0.9, sp=2.2+Math.random()*3.4;
+    vx=Math.cos(a)*sp+wind*.6; vy=Math.sin(a)*sp-0.7;
+    decay=.02+Math.random()*.035; size=1+Math.random()*2; bright=.75+Math.random()*.25; trail=true; g=.05+Math.random()*.07;
+  }else{                    // float：ふわっと長く舞う少数
+    vx=(Math.random()-.5)*1.4+wind; vy=-(0.7+Math.random()*1.8);
+    decay=.008+Math.random()*.022; size=1.4+Math.random()*3.2; bright=.5+Math.random()*.5; trail=false; g=.01+Math.random()*.02;
+  }
+  return {x,y,px:x,py:y,vx,vy,g,life:1,decay,size,bright,trail,s:col.s,l:col.l,tw:Math.random()*6.28};
+}
+function drawSparks(arr,c){
+  for(let i=arr.length-1;i>=0;i--){const p=arr[i];
+    p.px=p.x;p.py=p.y;
+    p.tw+=.7; p.vy+=p.g; p.vx+=wind*0.03; p.x+=p.vx; p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0){arr.splice(i,1);continue;}
+    const tw=0.6+0.4*Math.sin(p.tw*1.7+p.px);            // ちらつき（明るさrandom）
+    const a=Math.min(1,p.life*1.2)*p.bright*tw;
+    if(p.trail){                                          // 金属火花の尾
+      c.globalAlpha=a*0.5; c.strokeStyle='rgb('+p.l+')';
+      c.lineWidth=Math.max(.6,p.size*.7); c.lineCap='round';
+      c.beginPath(); c.moveTo(p.px,p.py); c.lineTo(p.x,p.y); c.stroke();
+    }
+    c.globalAlpha=a;
+    const s=p.size*1.4; c.drawImage(p.s,p.x-s/2,p.y-s/2,s,s);
+  }
+}
+
+function frame(ts){
+  if(!t0)t0=ts;const time=(ts-t0)/1000;
+  const flick=0.5+0.5*(0.5*Math.sin(time*13)+0.3*Math.sin(time*27+1)+0.2*Math.sin(time*41+2));
+  intensity+=((burning?1:0)-intensity)*0.08;
+  if(time>windNext){windTarget=(Math.random()-.5)*1.3;windNext=time+0.25+Math.random()*0.5;}
+  wind+=(windTarget-wind)*0.04;
+
+  if(intensity>0.02){
+    spawnFire(Math.round((4+flick*4)*intensity));        // 炎は控えめ
+    const cap = sparks.length+sparksF.length < 1500;     // 性能保護の上限
+    const ns=cap?Math.round((18+flick*14)*intensity):0;  // 火花は主役（3〜5倍）
+    for(let s=0;s<ns;s++){ (Math.random()<0.45?sparksF:sparks).push(makeSpark()); }
+    if(Math.random()<0.3*intensity) spawnSmoke();
+  }
+
+  // ===== 背面キャンバス：煙→炎→背面火花 =====
+  ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation='source-over';
+  for(let i=smoke.length-1;i>=0;i--){const p=smoke[i];p.x+=p.vx;p.y+=p.vy;p.vy*=.99;p.size+=.5;p.life-=p.decay;
+    if(p.life<=0){smoke.splice(i,1);continue;}ctx.globalAlpha=Math.max(0,p.life*0.12*intensity);const s=p.size;ctx.drawImage(SP_SMOKE,p.x-s/2,p.y-s/2,s,s);}
+  ctx.globalCompositeOperation='lighter';
+  for(let i=fire.length-1;i>=0;i--){const p=fire[i];p.wob+=.3;const h=1-p.life;
+    p.vx+=Math.sin(p.wob)*0.05+(Math.random()-.5)*0.16*p.turb*(0.3+h)+wind*0.15*(0.2+h);
+    p.x+=p.vx;p.y+=p.vy;p.vy*=.985;p.vx*=.95;p.life-=p.decay;
+    if(p.life<=0){fire.splice(i,1);continue;}
+    const t=p.life;let sp=t>.78?SP_CORE:t>.55?SP_HOT:t>.3?SP_MID:SP_COOL;const s=p.size*(1+(1-t)*1.25);
+    ctx.globalAlpha=Math.min(1,t*1.2)*(0.5+0.5*flick);ctx.drawImage(sp,p.x-s/2,p.y-s/2,s,s);}
+  drawSparks(sparks,ctx);
+  ctx.globalAlpha=1;
+
+  // ===== 前面キャンバス：サイコロの手前を舞う火花 =====
+  sctx.clearRect(0,0,W,H);sctx.globalCompositeOperation='lighter';
+  drawSparks(sparksF,sctx);
+  sctx.globalAlpha=1;
+
+  // 陽炎（サイコロ＋お椀の背景わずか）
+  heatD.setAttribute('scale',(intensity*1.7*(0.7+0.3*flick)).toFixed(2));
+  heatBgD.setAttribute('scale',(intensity*0.9*(0.7+0.3*flick)).toFixed(2));
+  if(Math.random()<0.6){heatT.setAttribute('seed',(Math.random()*100|0));heatBgT.setAttribute('seed',(Math.random()*100|0));}
+
+  if(burning||fire.length||smoke.length||sparks.length||sparksF.length||intensity>0.02){raf=requestAnimationFrame(frame);}
+  else{raf=null;t0=0;dieWrap.style.filter='none';bowl.style.filter='none';}
+}
+const dieWrap=document.getElementById('dieWrap'),bowl=document.getElementById('bowl');
+const heatD=document.getElementById('heatD'),heatT=document.getElementById('heatT'),heatBgD=document.getElementById('heatBgD'),heatBgT=document.getElementById('heatBgT');
+function fireStart(){burning=true;dieWrap.style.filter='url(#heat)';bowl.style.filter='url(#heatBg)';if(!raf){t0=0;raf=requestAnimationFrame(frame);}}
+function fireStop(){burning=false;}
+
+/* ===== カットイン / 役 ===== */
+const CUTINS=['勝負だ！','流れが来てる…','ここで決める！','乗れ…！','頼む！'];
+const GOOD=[{l:'ピンゾロ',c:'g'},{l:'シゴロ',c:'g'},{l:'アラシ',c:'g'}];
+const NORMAL=[{l:'4の目',c:'n'},{l:'2の目',c:'n'},{l:'役なし',c:'n'}];
+const BAD=[{l:'ヒフミ',c:'b'},{l:'ションベン',c:'b'}];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function weighted(p){const r=Math.random();let s=0;for(const[w,v]of p){s+=w;if(r<s)return v;}return p[p.length-1][1];}
+function pickRole(pat){if(pat==='both')return weighted([[.70,pick(GOOD)],[.25,pick(NORMAL)],[.05,pick(BAD)]]);
+  if(pat==='fire'||pat==='cutin')return weighted([[.35,pick(GOOD)],[.55,pick(NORMAL)],[.10,pick(BAD)]]);return pick(NORMAL);}
+const cutin=document.getElementById('cutin'),cutinText=document.getElementById('cutinText'),result=document.getElementById('result');
+let liveMode=false,playTimer=null;
+function play(pat){if(liveMode)toggleLive();clearTimeout(playTimer);
+  cutin.className='cutin';result.className='result';result.textContent='　';randDice();
+  const sf=pat==='fire'||pat==='both',sc=pat==='cutin'||pat==='both',role=pickRole(pat);
+  setTimeout(()=>{if(sf)fireStart();if(sc){cutinText.textContent=pick(CUTINS);cutin.className='cutin on'+(pat==='both'?' hot':'');}},50);
+  playTimer=setTimeout(()=>{if(sf)fireStop();if(sc)cutin.className='cutin off';result.textContent=role.l;result.className='result show '+role.c;},1600);
+}
+function toggleLive(){liveMode=!liveMode;document.getElementById('liveBtn').textContent=liveMode?'⏹ 連続表示 中':'🔍 連続表示 ON';
+  if(liveMode){result.className='result';result.textContent='　';randDice();fireStart();}else fireStop();}
+window.onload=()=>{randDice();};
+</script>
+</body>
+</html>

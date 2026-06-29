@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ 炎モック サイコロ3個が個別に発火</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#fff;font-family:sans-serif;padding:16px;max-width:460px;margin:0 auto}
+h2{color:#f5c842;font-size:18px;margin-bottom:4px}
+.intro{color:#999;font-size:12px;line-height:1.7;margin-bottom:18px}
+.intro b{color:#ddd}
+.card{background:#1b1b1b;border:1.5px solid #333;border-radius:16px;padding:14px;margin-bottom:20px}
+.label{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.tag{background:#ff7a2f;color:#160d06;border-radius:6px;padding:1px 9px;font-size:12px;font-weight:900}
+.desc{font-size:11px;color:#888;margin-bottom:8px;line-height:1.6}
+
+.stage{position:relative;width:220px;height:220px;margin:8px auto 2px}
+.bowl{position:absolute;inset:0}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 30%,
+    #f8f8f6 0%,#eeece4 14%,#e0ddd5 28%,#cdc9c0 42%,
+    #b5b0a7 56%,#9e9990 68%,#8a857c 79%,#76716a 88%,#636059 100%);
+  box-shadow:inset 0 8px 22px rgba(0,0,0,.5),inset 0 -4px 10px rgba(255,255,255,.1),0 5px 28px rgba(0,0,0,.7);z-index:1}
+canvas.fx{position:absolute;inset:0;pointer-events:none}
+.warm{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,150,40,.85) 0%,rgba(255,90,20,.45) 34%,rgba(180,40,10,.12) 56%,transparent 72%);
+  mix-blend-mode:soft-light;opacity:0;z-index:5}
+
+.diegroup{position:absolute;inset:0;z-index:4}
+.die-outer{position:absolute;transform:translate(-50%,-50%)}
+.die-outer.top{left:50%;top:44%}
+.die-outer.bl {left:42%;top:57%}
+.die-outer.br {left:58%;top:57%}
+.cs{width:46px;height:46px;perspective:300px;perspective-origin:50% -30%}
+.cube{width:46px;height:46px;position:relative;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(16deg)}
+.face{position:absolute;width:46px;height:46px;border-radius:9px;border:1px solid rgba(180,165,145,.25);backface-visibility:hidden;overflow:hidden}
+.f-top{transform:rotateX( 90deg) translateZ(23px);background:linear-gradient(145deg,#fffdf7,#f5f0e5)}
+.f-frt{transform:             translateZ(23px);background:linear-gradient(145deg,#faf7f0,#f0ece2)}
+.f-rgt{transform:rotateY( 90deg) translateZ(23px);background:linear-gradient(145deg,#f0ede5,#e4e0d8)}
+.dot{position:absolute;width:18%;height:18%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#333,#000)}
+.r{background:radial-gradient(circle at 35% 30%,#ff3333,#cc0000)!important}
+.p1 .dot:nth-child(1){top:41%;left:41%}
+.p2 .dot:nth-child(1){top:15%;left:15%} .p2 .dot:nth-child(2){bottom:15%;right:15%}
+.p3 .dot:nth-child(1){top:13%;left:13%} .p3 .dot:nth-child(2){top:41%;left:41%} .p3 .dot:nth-child(3){bottom:13%;right:13%}
+.p4 .dot:nth-child(1){top:15%;left:15%} .p4 .dot:nth-child(2){top:15%;right:15%} .p4 .dot:nth-child(3){bottom:15%;left:15%} .p4 .dot:nth-child(4){bottom:15%;right:15%}
+.p5 .dot:nth-child(1){top:13%;left:13%} .p5 .dot:nth-child(2){top:13%;right:13%} .p5 .dot:nth-child(3){top:41%;left:41%} .p5 .dot:nth-child(4){bottom:13%;left:13%} .p5 .dot:nth-child(5){bottom:13%;right:13%}
+.p6 .dot:nth-child(1){top:13%;left:15%} .p6 .dot:nth-child(2){top:13%;right:15%} .p6 .dot:nth-child(3){top:41%;left:15%} .p6 .dot:nth-child(4){top:41%;right:15%} .p6 .dot:nth-child(5){bottom:13%;left:15%} .p6 .dot:nth-child(6){bottom:13%;right:15%}
+
+.row{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.btn{background:#2a2a2a;color:#ccc;border:1px solid #444;border-radius:9px;padding:7px 18px;font-size:13px;cursor:pointer;font-weight:700}
+.btn:hover{background:#383838;color:#fff}
+.btn.on{border-color:#f5c842;color:#f5c842}
+.flow{margin-top:12px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#aaa;line-height:1.85}
+.flow .h{color:#ddd;font-weight:700;display:block;margin-bottom:2px}
+.flow b{color:#f5c842;font-weight:700}
+</style>
+</head>
+<body>
+
+<h2>🔥 炎モック（サイコロ3個が個別に発火）</h2>
+<p class="intro">「1つの炎の前にサイコロ」ではなく、<b>3つのサイコロそれぞれが燃えている</b>見え方を狙ったモックです。<br>3つの炎は根元・揺れ・高さ・広がり・火花の出方をすべて少しずつ変え、同期しないようにしています。重なって迫力を出しつつ「3つある」と分かるようにしています。<br>「🔍 連続」で出しっぱなしにして確認してください。</p>
+
+<div class="card">
+  <div class="label"><span class="tag">3</span> サイコロ3個が個別に発火</div>
+  <div class="desc">各サイコロの下から個別に炎が立ち上る・3つは別々の揺らぎ／高さ／広がり・火花も別々・重なって全体で迫力</div>
+  <div class="stage">
+    <div class="bowl">
+      <div class="bowl-bg"></div>
+      <canvas class="fx" id="cBack" width="220" height="220" style="z-index:2"></canvas>
+      <div class="diegroup">
+        <div class="die-outer top"><div class="cs"><div class="cube"><div class="face f-top"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer bl"><div class="cs"><div class="cube"><div class="face f-top"><div class="p5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer br"><div class="cs"><div class="cube"><div class="face f-top"><div class="p1"><div class="dot r"></div></div></div><div class="face f-frt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+      </div>
+      <div class="warm" id="warm"></div>
+      <canvas class="fx" id="cFront" width="220" height="220" style="z-index:6;filter:url(#heat)"></canvas>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="F.play()">▶ 再生</button>
+    <button class="btn" id="live" onclick="F.toggle()">🔍 連続</button>
+  </div>
+  <div class="flow">
+    <span class="h">狙い</span>
+    ⭕ <b>サイコロ3つそれぞれが発火</b>している（❌ 焚き火1つの前にサイコロ）／3つの炎は<b>別々に揺れて</b>高さ・広がり・火花が違う／自然に重なって全体で迫力
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.024" numOctaves="2" seed="5" result="n">
+      <animate attributeName="seed" values="5;14;5" dur="1.6s" repeatCount="indefinite"/></feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<script>
+function sprite(r,g,b){
+  const c=document.createElement('canvas');c.width=c.height=64;
+  const x=c.getContext('2d');
+  const gd=x.createRadialGradient(32,32,0,32,32,32);
+  gd.addColorStop(0,'rgba('+r+','+g+','+b+',1)');
+  gd.addColorStop(.45,'rgba('+r+','+g+','+b+',.45)');
+  gd.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+  x.fillStyle=gd;x.fillRect(0,0,64,64);return c;
+}
+const CORE=sprite(255,249,210),YEL=sprite(255,236,150),AMB=sprite(255,178,72),ORA=sprite(255,120,40),RED=sprite(212,52,18),EMB=sprite(255,232,170);
+const SPK=[{s:sprite(255,255,248),l:'255,255,235'},{s:sprite(255,236,150),l:'255,230,150'},{s:sprite(255,170,78),l:'255,168,80'}];
+function spkCol(){const r=Math.random();return r<.3?SPK[0]:r<.74?SPK[1]:SPK[2];}
+
+let raf=0,t0=0,time=0,flick=1;
+
+/* 3つの発火源（サイコロごと）。数値を少しずつ変えて同期させない */
+const SRC=[
+  // top のサイコロ
+  {cx:110,baseY:112,baseW:24,height:80,size:14,swayAmt:11,drift:0.7,wander:1.55,spawn:4.6,front:1.5,spark:2.6,
+   swayInt:0.16,breathInt:0.20,phase:0.0, sway:0,swayT:0,swayNext:0,breath:1,breathT:1,breathNext:0},
+  // bl のサイコロ
+  {cx:92, baseY:142,baseW:24,height:84,size:14,swayAmt:15,drift:0.85,wander:1.8,spawn:5.5,front:2.2,spark:2.6,
+   swayInt:0.23,breathInt:0.27,phase:1.7, sway:0,swayT:0,swayNext:0,breath:1,breathT:1,breathNext:0},
+  // br のサイコロ
+  {cx:128,baseY:142,baseW:24,height:92,size:14,swayAmt:13,drift:0.6,wander:1.7,spawn:6,front:2.2,spark:3,
+   swayInt:0.19,breathInt:0.31,phase:3.1, sway:0,swayT:0,swayNext:0,breath:1,breathT:1,breathNext:0},
+];
+
+const F=(function(){
+  const back =document.getElementById('cBack').getContext('2d');
+  const front=document.getElementById('cFront').getContext('2d');
+  const warmEl=document.getElementById('warm');
+  let fire=[],fireF=[],emb=[],spk=[],spkB=[];
+  let burn=false,inten=0,offT=0;
+
+  function mkFire(si,isFront){
+    const S=SRC[si];
+    const baseX=S.cx+S.sway*S.swayAmt;
+    const x=baseX+(Math.random()-.5)*S.baseW;
+    const y=S.baseY+Math.random()*8;
+    const tall=Math.random()<0.22?1.5:1;
+    const vy=-(0.65+Math.random()*1.0)*(0.75+S.breath*0.8)*tall;
+    return {si,x,y,vx:(Math.random()-.5)*.4,vy,life:1,
+      decay:0.016*(0.7+Math.random()*0.7),
+      size:S.size*(0.7+Math.random()*0.8),
+      ph:Math.random()*6.28,amp:S.wander*(0.5+Math.random()),
+      baseY:S.baseY,height:S.height,front:isFront,split:false};
+  }
+  function drawFire(p,ctx){
+    const S=SRC[p.si];
+    p.ph+=0.09;
+    const hf=Math.max(0,Math.min(1,(p.baseY-p.y)/p.height));
+    const wob=Math.sin(p.ph+S.sway*2)*p.amp*(0.4+hf*1.6);
+    p.x+=p.vx+wob*0.12+S.sway*S.drift;
+    p.vy-=0.0065*(0.8+S.breath*0.6);
+    p.y+=p.vy;
+    if(hf>0.5){
+      p.vx+=(Math.random()-.5)*0.7*hf;
+      p.life-=p.decay*(1+hf*1.6);
+      if(!p.split&&p.life<0.5&&Math.random()<0.05){p.split=true;
+        for(let k=0;k<2;k++)fire.push({si:p.si,x:p.x,y:p.y,vx:(Math.random()-.5)*1.3,vy:p.vy*0.8,
+          life:p.life*0.8,decay:p.decay*1.7,size:p.size*0.65,ph:Math.random()*6.28,amp:p.amp,
+          baseY:p.baseY,height:p.height,front:p.front,split:true});}
+    }else p.life-=p.decay;
+    if(p.life<=0)return false;
+    const l=p.life;let spr,a;
+    if(l>0.82){spr=CORE;a=0.10;}
+    else if(l>0.6){spr=YEL;a=0.13;}
+    else if(l>0.4){spr=AMB;a=0.14;}
+    else if(l>0.22){spr=ORA;a=0.13;}
+    else{spr=RED;a=0.10;}
+    a*=(p.front?0.62:1)*0.85;
+    const env=Math.sin(Math.min(1,l)*Math.PI);
+    ctx.globalAlpha=a*env*inten;
+    const s=p.size*(0.7+(1-l)*1.0);
+    ctx.drawImage(spr,p.x-s/2,p.y-s/2,s,s);
+    return true;
+  }
+  function mkEmb(si){
+    const S=SRC[si];
+    const x=S.cx+S.sway*S.swayAmt+(Math.random()-.5)*S.baseW,y=S.baseY-Math.random()*30;
+    return {x,y,vx:(Math.random()-.5)*1.0+S.sway*0.4,vy:-(0.9+Math.random()*1.8),
+      life:1,decay:0.012+Math.random()*0.02,size:1.2+Math.random()*2.2,ph:Math.random()*6.28};
+  }
+  function drawEmb(p,ctx){
+    p.ph+=0.2; p.x+=p.vx+Math.sin(p.ph)*0.3; p.vy+=0.008; p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0)return false;
+    ctx.globalAlpha=Math.min(1,p.life*1.3)*(0.7+0.3*Math.sin(p.ph*2))*inten;
+    const s=p.size*1.6; ctx.drawImage(EMB,p.x-s/2,p.y-s/2,s,s); return true;
+  }
+  function mkSpark(si){
+    const S=SRC[si];
+    const x=S.cx+S.sway*S.swayAmt+(Math.random()-.5)*S.baseW;
+    const y=S.baseY-Math.random()*40;
+    const ang=-Math.PI/2+(Math.random()-.5)*2.6;
+    const sp=0.8+Math.random()*3.4;
+    const col=spkCol();
+    return {x,y,vx:Math.cos(ang)*sp+S.sway*0.4,vy:Math.sin(ang)*sp,
+      g:0.02+Math.random()*0.05,life:1,decay:0.012+Math.random()*0.04,
+      size:0.7+Math.random()*2.8,bright:0.45+Math.random()*0.55,
+      tw:Math.random()*6.28,s:col.s};
+  }
+  function drawSpark(p,ctx){
+    p.tw+=0.7; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0)return false;
+    const tw=0.6+0.4*Math.sin(p.tw*1.7+p.x);
+    ctx.globalAlpha=Math.min(1,p.life*1.3)*p.bright*tw;
+    const s=p.size*1.5; ctx.drawImage(p.s,p.x-s/2,p.y-s/2,s,s); return true;
+  }
+
+  function step(){
+    inten+=((burn?1:0)-inten)*0.06;
+    // 各発火源を別々に更新
+    for(const S of SRC){
+      if(time>S.swayNext){S.swayT=(Math.random()-.5)*2;S.swayNext=time+S.swayInt+Math.random()*0.4;}
+      S.sway+=(S.swayT-S.sway)*0.07;
+      if(time>S.breathNext){S.breathT=0.5+Math.random()*1.0;S.breathNext=time+S.breathInt+Math.random()*0.5;}
+      if(Math.random()<0.015)S.breathT=1.5+Math.random()*0.3;
+      S.breath+=(S.breathT-S.breath)*0.08;
+    }
+    if(inten>0.02){
+      for(let si=0;si<3;si++){
+        const S=SRC[si];
+        const fl=0.5+0.5*Math.sin(time*13+S.phase*3);          // 源ごとに位相違いのちらつき
+        const nb=Math.round(S.spawn*(0.6+fl*0.8)*inten*S.breath);
+        for(let i=0;i<nb;i++)fire.push(mkFire(si,false));
+        const nfr=Math.round(S.front*(0.5+fl*0.8)*inten);   // 各サイコロ前面の炎（そのコマが燃えて見える）
+        for(let i=0;i<nfr;i++)fireF.push(mkFire(si,true));
+        if(Math.random()<0.55*inten)emb.push(mkEmb(si));
+        const nsp=Math.round(S.spark*(0.5+fl)*inten);
+        for(let i=0;i<nsp;i++)(Math.random()<0.4?spkB:spk).push(mkSpark(si));
+      }
+    }
+    back.clearRect(0,0,220,220); back.globalCompositeOperation='lighter';
+    for(let i=fire.length-1;i>=0;i--){if(!drawFire(fire[i],back))fire.splice(i,1);}
+    for(let i=spkB.length-1;i>=0;i--){if(!drawSpark(spkB[i],back))spkB.splice(i,1);}
+    front.clearRect(0,0,220,220); front.globalCompositeOperation='lighter';
+    for(let i=fireF.length-1;i>=0;i--){if(!drawFire(fireF[i],front))fireF.splice(i,1);}
+    for(let i=emb.length-1;i>=0;i--){if(!drawEmb(emb[i],front))emb.splice(i,1);}
+    for(let i=spk.length-1;i>=0;i--){if(!drawSpark(spk[i],front))spk.splice(i,1);}
+    const w=(0.30+0.5*flick)*inten;
+    warmEl.style.opacity=w.toFixed(3);
+  }
+  function play(){burn=true;clearTimeout(offT);offT=setTimeout(()=>{burn=false;},1900);start();}
+  function toggle(){const b=document.getElementById('live');burn=!burn;clearTimeout(offT);b.classList.toggle('on',burn);if(burn)start();}
+  function start(){if(!raf){t0=0;raf=requestAnimationFrame(loop);}}
+  return {step,play,toggle,get burn(){return burn;}};
+})();
+
+function loop(ts){
+  if(!t0)t0=ts; time=(ts-t0)/1000;
+  flick=0.5+0.5*(0.5*Math.sin(time*13)+0.3*Math.sin(time*27+1)+0.2*Math.sin(time*41+2));
+  F.step();
+  raf=requestAnimationFrame(loop);
+}
+window.F=F;
+</script>
+</body>
+</html>

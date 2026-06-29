@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ 炎モック 現在版 / メラメラ強化版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#fff;font-family:sans-serif;padding:16px;max-width:460px;margin:0 auto}
+h2{color:#f5c842;font-size:18px;margin-bottom:4px}
+.intro{color:#999;font-size:12px;line-height:1.7;margin-bottom:18px}
+.intro b{color:#ddd}
+.card{background:#1b1b1b;border:1.5px solid #333;border-radius:16px;padding:14px;margin-bottom:20px}
+.label{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.tag1{background:#7a7a7a;color:#111;border-radius:6px;padding:1px 9px;font-size:12px;font-weight:900}
+.tag2{background:#ff7a2f;color:#160d06;border-radius:6px;padding:1px 9px;font-size:12px;font-weight:900}
+.desc{font-size:11px;color:#888;margin-bottom:8px;line-height:1.6}
+
+.stage{position:relative;width:220px;height:220px;margin:8px auto 2px}
+.bowl{position:absolute;inset:0}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 30%,
+    #f8f8f6 0%,#eeece4 14%,#e0ddd5 28%,#cdc9c0 42%,
+    #b5b0a7 56%,#9e9990 68%,#8a857c 79%,#76716a 88%,#636059 100%);
+  box-shadow:inset 0 8px 22px rgba(0,0,0,.5),inset 0 -4px 10px rgba(255,255,255,.1),0 5px 28px rgba(0,0,0,.7);z-index:1}
+canvas.fx{position:absolute;inset:0;pointer-events:none}
+.warm{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 64%,rgba(255,150,40,.9) 0%,rgba(255,90,20,.5) 32%,rgba(180,40,10,.15) 55%,transparent 72%);
+  mix-blend-mode:soft-light;opacity:0;z-index:5}
+.base{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 68%,rgba(255,70,20,.8) 0%,rgba(200,40,10,.35) 26%,transparent 50%);
+  mix-blend-mode:screen;opacity:0;z-index:2}
+
+.diegroup{position:absolute;inset:0;z-index:4}
+.die-outer{position:absolute;transform:translate(-50%,-50%)}
+.die-outer.top{left:50%;top:44%}
+.die-outer.bl {left:42%;top:57%}
+.die-outer.br {left:58%;top:57%}
+.cs{width:46px;height:46px;perspective:300px;perspective-origin:50% -30%}
+.cube{width:46px;height:46px;position:relative;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(16deg)}
+.face{position:absolute;width:46px;height:46px;border-radius:9px;border:1px solid rgba(180,165,145,.25);backface-visibility:hidden;overflow:hidden}
+.f-top{transform:rotateX( 90deg) translateZ(23px);background:linear-gradient(145deg,#fffdf7,#f5f0e5)}
+.f-frt{transform:             translateZ(23px);background:linear-gradient(145deg,#faf7f0,#f0ece2)}
+.f-rgt{transform:rotateY( 90deg) translateZ(23px);background:linear-gradient(145deg,#f0ede5,#e4e0d8)}
+.dot{position:absolute;width:18%;height:18%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#333,#000)}
+.r{background:radial-gradient(circle at 35% 30%,#ff3333,#cc0000)!important}
+.p1 .dot:nth-child(1){top:41%;left:41%}
+.p2 .dot:nth-child(1){top:15%;left:15%} .p2 .dot:nth-child(2){bottom:15%;right:15%}
+.p3 .dot:nth-child(1){top:13%;left:13%} .p3 .dot:nth-child(2){top:41%;left:41%} .p3 .dot:nth-child(3){bottom:13%;right:13%}
+.p4 .dot:nth-child(1){top:15%;left:15%} .p4 .dot:nth-child(2){top:15%;right:15%} .p4 .dot:nth-child(3){bottom:15%;left:15%} .p4 .dot:nth-child(4){bottom:15%;right:15%}
+.p5 .dot:nth-child(1){top:13%;left:13%} .p5 .dot:nth-child(2){top:13%;right:13%} .p5 .dot:nth-child(3){top:41%;left:41%} .p5 .dot:nth-child(4){bottom:13%;left:13%} .p5 .dot:nth-child(5){bottom:13%;right:13%}
+.p6 .dot:nth-child(1){top:13%;left:15%} .p6 .dot:nth-child(2){top:13%;right:15%} .p6 .dot:nth-child(3){top:41%;left:15%} .p6 .dot:nth-child(4){top:41%;right:15%} .p6 .dot:nth-child(5){bottom:13%;left:15%} .p6 .dot:nth-child(6){bottom:13%;right:15%}
+
+.row{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.btn{background:#2a2a2a;color:#ccc;border:1px solid #444;border-radius:9px;padding:7px 18px;font-size:13px;cursor:pointer;font-weight:700}
+.btn:hover{background:#383838;color:#fff}
+.btn.on{border-color:#f5c842;color:#f5c842}
+.flow{margin-top:12px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#aaa;line-height:1.85}
+.flow .h{color:#ddd;font-weight:700;display:block;margin-bottom:2px}
+.flow b{color:#f5c842;font-weight:700}
+</style>
+</head>
+<body>
+
+<h2>🔥 炎モック（メラメラ感くらべ）</h2>
+<p class="intro">同じお椀・同じサイコロで、<b>現在版</b>と<b>メラメラ強化版</b>を見比べられます。<br>「🔍 連続」で出しっぱなしにすると、炎が止まらず動き続ける様子を確認できます。<br>強化版＝大きく揺れる／高さが常に変化／先端が分裂して消える／一瞬大小する／同じ形が続かない、を狙っています。</p>
+
+<!-- ───────── 現在版 ───────── -->
+<div class="card">
+  <div class="label"><span class="tag1">現</span> 現在版</div>
+  <div class="desc">前回のモックと同じ炎。半透明・照り返し・火花あり。</div>
+  <div class="stage">
+    <div class="bowl">
+      <div class="bowl-bg"></div>
+      <div class="base" id="base1"></div>
+      <canvas class="fx" id="c1Back" width="220" height="220" style="z-index:2"></canvas>
+      <div class="diegroup">
+        <div class="die-outer top"><div class="cs"><div class="cube"><div class="face f-top"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer bl"><div class="cs"><div class="cube"><div class="face f-top"><div class="p5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer br"><div class="cs"><div class="cube"><div class="face f-top"><div class="p1"><div class="dot r"></div></div></div><div class="face f-frt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+      </div>
+      <div class="warm" id="warm1"></div>
+      <canvas class="fx" id="c1Front" width="220" height="220" style="z-index:6;filter:url(#heat1)"></canvas>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="E1.play()">▶ 再生</button>
+    <button class="btn" id="live1" onclick="E1.toggle()">🔍 連続</button>
+  </div>
+</div>
+
+<!-- ───────── メラメラ強化版 ───────── -->
+<div class="card">
+  <div class="label"><span class="tag2">強</span> メラメラ強化版</div>
+  <div class="desc">大きく揺れる・高さが常に変化・先端が分裂して消える・一瞬大小する・より透明・黄/橙/赤が自然に混ざる・火花増量＋ランダム化</div>
+  <div class="stage">
+    <div class="bowl">
+      <div class="bowl-bg"></div>
+      <div class="base" id="base2"></div>
+      <canvas class="fx" id="c2Back" width="220" height="220" style="z-index:2"></canvas>
+      <div class="diegroup">
+        <div class="die-outer top"><div class="cs"><div class="cube"><div class="face f-top"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer bl"><div class="cs"><div class="cube"><div class="face f-top"><div class="p5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-frt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p2"><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+        <div class="die-outer br"><div class="cs"><div class="cube"><div class="face f-top"><div class="p1"><div class="dot r"></div></div></div><div class="face f-frt"><div class="p4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div><div class="face f-rgt"><div class="p3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div></div></div>
+      </div>
+      <div class="warm" id="warm2"></div>
+      <canvas class="fx" id="c2Front" width="220" height="220" style="z-index:6;filter:url(#heat2)"></canvas>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="E2.play()">▶ 再生</button>
+    <button class="btn" id="live2" onclick="E2.toggle()">🔍 連続</button>
+  </div>
+  <div class="flow">
+    <span class="h">強化ポイント</span>
+    炎が<b>左右に大きくゆらゆら</b>／<b>高さが絶えず変化</b>／<b>先端が分裂して消える</b>／<b>一瞬フワッと大小する</b>／同じ形が続かない・<b>炎越しにサイコロが透ける</b>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="heat1" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.03" numOctaves="2" seed="3" result="n">
+      <animate attributeName="seed" values="3;9;3" dur="2.2s" repeatCount="indefinite"/></feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="heat2" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.024" numOctaves="2" seed="5" result="n">
+      <animate attributeName="seed" values="5;14;5" dur="1.6s" repeatCount="indefinite"/></feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<script>
+function sprite(r,g,b){
+  const c=document.createElement('canvas');c.width=c.height=64;
+  const x=c.getContext('2d');
+  const gd=x.createRadialGradient(32,32,0,32,32,32);
+  gd.addColorStop(0,'rgba('+r+','+g+','+b+',1)');
+  gd.addColorStop(.45,'rgba('+r+','+g+','+b+',.45)');
+  gd.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+  x.fillStyle=gd;x.fillRect(0,0,64,64);return c;
+}
+const CORE=sprite(255,249,210),YEL=sprite(255,236,150),AMB=sprite(255,178,72),ORA=sprite(255,120,40),RED=sprite(212,52,18),EMB=sprite(255,232,170);
+const SPK=[{s:sprite(255,255,248),l:'255,255,235'},{s:sprite(255,236,150),l:'255,230,150'},{s:sprite(255,170,78),l:'255,168,80'}];
+function spkCol(){const r=Math.random();return r<.3?SPK[0]:r<.74?SPK[1]:SPK[2];}
+
+let raf=0,t0=0,time=0,flick=1;
+
+function FireEngine(cfg){
+  const back =document.getElementById(cfg.back ).getContext('2d');
+  const front=document.getElementById(cfg.front).getContext('2d');
+  const warmEl=document.getElementById(cfg.warm);
+  const baseEl=document.getElementById(cfg.base);
+  let fire=[],fireF=[],emb=[],spk=[],spkB=[];
+  let burn=false,inten=0,offT=0;
+  let sway=0,swayT=0,swayNext=0,breath=1,breathT=1,breathNext=0;
+
+  function mkFire(isFront){
+    const baseX=cfg.cx+sway*cfg.swayAmt;
+    const x=baseX+(Math.random()-.5)*cfg.baseW;
+    const y=cfg.baseY+Math.random()*8;
+    const tall=cfg.mera&&Math.random()<0.22?1.5:1;           // たまに高く伸びる舌
+    const vy=-(0.65+Math.random()*1.0)*(cfg.mera?(0.75+breath*0.8):1)*tall;
+    return {x,y,vx:(Math.random()-.5)*.4,vy,life:1,
+      decay:cfg.decay*(0.7+Math.random()*0.7),
+      size:cfg.size*(0.7+Math.random()*0.8),
+      ph:Math.random()*6.28,amp:cfg.wander*(0.5+Math.random()),
+      front:isFront,split:false};
+  }
+  function drawFire(p,ctx){
+    p.ph+=0.09;
+    const hf=Math.max(0,Math.min(1,(cfg.baseY-p.y)/cfg.height)); // 0=根元 1=先端
+    const wob=Math.sin(p.ph+sway*2)*p.amp*(0.4+hf*1.6);
+    p.x+=p.vx+wob*0.12+sway*cfg.drift;
+    p.vy-=0.0065*(cfg.mera?(0.8+breath*0.6):1);
+    p.y+=p.vy;
+    if(cfg.mera&&hf>0.5){                                     // 先端：分裂＆消失
+      p.vx+=(Math.random()-.5)*0.7*hf;
+      p.life-=p.decay*(1+hf*1.6);
+      if(!p.split&&p.life<0.5&&Math.random()<0.05){p.split=true;
+        for(let k=0;k<2;k++)fire.push({x:p.x,y:p.y,vx:(Math.random()-.5)*1.3,vy:p.vy*0.8,
+          life:p.life*0.8,decay:p.decay*1.7,size:p.size*0.65,ph:Math.random()*6.28,amp:p.amp,front:p.front,split:true});}
+    }else p.life-=p.decay;
+    if(p.life<=0)return false;
+    const l=p.life;let spr,a;
+    if(l>0.82){spr=CORE;a=0.10;}
+    else if(l>0.6){spr=YEL;a=0.13;}
+    else if(l>0.4){spr=AMB;a=0.14;}
+    else if(l>0.22){spr=ORA;a=0.13;}
+    else{spr=RED;a=0.10;}
+    a*=(p.front?cfg.frontA:1)*cfg.alpha;
+    const env=Math.sin(Math.min(1,l)*Math.PI);
+    ctx.globalAlpha=a*env*inten;
+    const s=p.size*(0.7+(1-l)*1.0);
+    ctx.drawImage(spr,p.x-s/2,p.y-s/2,s,s);
+    return true;
+  }
+  function mkEmb(){
+    const x=cfg.cx+sway*cfg.swayAmt+(Math.random()-.5)*cfg.baseW,y=cfg.baseY-Math.random()*34;
+    return {x,y,vx:(Math.random()-.5)*1.0+sway*0.4,vy:-(0.9+Math.random()*1.8),
+      life:1,decay:0.012+Math.random()*0.02,size:1.2+Math.random()*2.2,ph:Math.random()*6.28};
+  }
+  function drawEmb(p,ctx){
+    p.ph+=0.2; p.x+=p.vx+Math.sin(p.ph)*0.3; p.vy+=0.008; p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0)return false;
+    ctx.globalAlpha=Math.min(1,p.life*1.3)*(0.7+0.3*Math.sin(p.ph*2))*inten;
+    const s=p.size*1.6; ctx.drawImage(EMB,p.x-s/2,p.y-s/2,s,s); return true;
+  }
+  function mkSpark(){
+    const x=cfg.cx+sway*cfg.swayAmt+(Math.random()-.5)*cfg.baseW;
+    const y=cfg.baseY-Math.random()*44;
+    const ang=-Math.PI/2+(Math.random()-.5)*(cfg.mera?2.6:1.6);
+    const sp=0.8+Math.random()*(cfg.mera?3.4:2.2);
+    const col=spkCol();
+    return {x,y,px:x,py:y,vx:Math.cos(ang)*sp+sway*0.4,vy:Math.sin(ang)*sp,
+      g:0.02+Math.random()*0.05,life:1,decay:0.012+Math.random()*0.04,
+      size:0.7+Math.random()*(cfg.mera?2.8:1.7),bright:0.45+Math.random()*0.55,
+      tw:Math.random()*6.28,s:col.s,l:col.l};
+  }
+  function drawSpark(p,ctx){
+    p.px=p.x;p.py=p.y; p.tw+=0.7; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0)return false;
+    const tw=0.6+0.4*Math.sin(p.tw*1.7+p.px);
+    ctx.globalAlpha=Math.min(1,p.life*1.3)*p.bright*tw;
+    const s=p.size*1.5; ctx.drawImage(p.s,p.x-s/2,p.y-s/2,s,s); return true;
+  }
+
+  function step(){
+    // 呼吸（高さの大小）＆ゆらぎ（左右）：ランダムに更新
+    if(time>swayNext){swayT=(Math.random()-.5)*2;swayNext=time+(cfg.mera?0.18:0.3)+Math.random()*(cfg.mera?0.4:0.5);}
+    sway+=(swayT-sway)*(cfg.mera?0.07:0.04);
+    if(time>breathNext){breathT=cfg.mera?(0.5+Math.random()*1.0):(0.92+Math.random()*0.16);breathNext=time+(cfg.mera?0.22:0.6)+Math.random()*0.5;}
+    if(cfg.mera&&Math.random()<0.015)breathT=1.5+Math.random()*0.3;   // 突発フレア
+    breath+=(breathT-breath)*(cfg.mera?0.08:0.05);
+
+    inten+=((burn?1:0)-inten)*0.06;
+    if(inten>0.02){
+      const nb=Math.round(cfg.spawn*flick*inten*(cfg.mera?breath:1));
+      for(let i=0;i<nb;i++)fire.push(mkFire(false));
+      const nf=Math.round((1+flick*2)*inten);
+      for(let i=0;i<nf;i++)fireF.push(mkFire(true));
+      if(Math.random()<0.7*inten)emb.push(mkEmb());
+      const nsp=Math.round(cfg.spark*flick*inten);
+      for(let i=0;i<nsp;i++)(Math.random()<0.4?spkB:spk).push(mkSpark());
+    }
+    back.clearRect(0,0,220,220); back.globalCompositeOperation='lighter';
+    for(let i=fire.length-1;i>=0;i--){if(!drawFire(fire[i],back))fire.splice(i,1);}
+    for(let i=spkB.length-1;i>=0;i--){if(!drawSpark(spkB[i],back))spkB.splice(i,1);}
+    front.clearRect(0,0,220,220); front.globalCompositeOperation='lighter';
+    for(let i=fireF.length-1;i>=0;i--){if(!drawFire(fireF[i],front))fireF.splice(i,1);}
+    for(let i=emb.length-1;i>=0;i--){if(!drawEmb(emb[i],front))emb.splice(i,1);}
+    for(let i=spk.length-1;i>=0;i--){if(!drawSpark(spk[i],front))spk.splice(i,1);}
+    const w=(0.30+0.55*flick)*inten*(cfg.mera?(0.7+breath*0.4):1);
+    warmEl.style.opacity=w.toFixed(3);
+    baseEl.style.opacity=(0.55*inten).toFixed(3);
+  }
+  function play(){burn=true;clearTimeout(offT);offT=setTimeout(()=>{burn=false;},1900);start();}
+  function toggle(){const b=document.getElementById(cfg.live);burn=!burn;clearTimeout(offT);b.classList.toggle('on',burn);if(burn)start();}
+  function start(){if(!raf){t0=0;raf=requestAnimationFrame(loop);}}
+  return {step,play,toggle,get burn(){return burn;}};
+}
+
+const E1=FireEngine({back:'c1Back',front:'c1Front',warm:'warm1',base:'base1',live:'live1',
+  cx:110,baseY:152,baseW:44,height:70,size:18,decay:0.018,
+  swayAmt:6,drift:0.4,wander:0.6,frontA:0.55,alpha:1,spawn:9,spark:4,mera:false});
+const E2=FireEngine({back:'c2Back',front:'c2Front',warm:'warm2',base:'base2',live:'live2',
+  cx:110,baseY:152,baseW:40,height:100,size:16,decay:0.016,
+  swayAmt:15,drift:0.7,wander:1.7,frontA:0.5,alpha:0.85,spawn:12,spark:7,mera:true});
+
+function loop(ts){
+  if(!t0)t0=ts; time=(ts-t0)/1000;
+  flick=0.5+0.5*(0.5*Math.sin(time*13)+0.3*Math.sin(time*27+1)+0.2*Math.sin(time*41+2));
+  E1.step(); E2.step();
+  raf=requestAnimationFrame(loop);
+}
+window.E1=E1; window.E2=E2;
+</script>
+</body>
+</html>

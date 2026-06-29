@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#0d0d0d;color:#f0f0f0;max-width:430px;margin:0 auto;padding:18px 14px 30px;}
+h1{font-size:18px;text-align:center;margin-bottom:3px;}
+.note{font-size:11px;color:#888;text-align:center;margin-bottom:16px;line-height:1.5;}
+.sec{font-size:13px;font-weight:900;color:#f5c842;margin:18px 0 8px;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th,td{border:1px solid #333;padding:9px 6px;text-align:center;}
+th{background:#1c1c1c;color:#bbb;font-size:12px;}
+td.ppl{background:#161616;font-weight:900;color:#ddd;white-space:nowrap;}
+.hit{background:rgba(245,200,66,.18);color:#f5c842;font-weight:900;font-size:16px;}
+.norm{color:#999;}
+.cap{font-size:11px;color:#777;margin-top:6px;line-height:1.6;}
+/* 順番ダイアグラム */
+.flow{background:#141414;border:1px solid #262626;border-radius:10px;padding:12px;margin-top:6px;}
+.flowrow{display:flex;align-items:center;gap:6px;margin:7px 0;flex-wrap:wrap;}
+.rlabel{font-size:11px;color:#888;width:74px;flex:none;}
+.chip{font-size:13px;font-weight:700;padding:5px 9px;border-radius:8px;background:#262626;color:#ccc;}
+.chip.parent{background:rgba(245,200,66,.15);color:#f5c842;border:1px solid rgba(245,200,66,.4);}
+.chip.star{background:#f5c842;color:#1a1500;box-shadow:0 0 12px rgba(245,200,66,.5);}
+.arrow{color:#555;font-size:12px;}
+.count{font-size:10px;color:#666;margin-left:auto;}
+</style></head>
+<body>
+<h1>🎲 50回ごとピンゾロ、誰が引く？</h1>
+<p class="note">前提：最初の親＝Aさん／親は毎ラウンド1人ずつ交代<br>（自動ローテ）／全員でプレイ／途中でホームに戻らない</p>
+
+<table>
+<tr><th>人数</th><th>50回目</th><th>100回目</th><th>150回目</th><th>200回目</th></tr>
+<tr><td class="ppl">2人<br>A,B</td><td class="hit">A</td><td class="norm">B</td><td class="norm">A</td><td class="norm">B</td></tr>
+<tr><td class="ppl">3人<br>A,B,C</td><td class="hit">A</td><td class="norm">B</td><td class="norm">B</td><td class="norm">C</td></tr>
+<tr><td class="ppl">4人<br>A,B,C,D</td><td class="hit">C</td><td class="norm">A</td><td class="norm">D</td><td class="norm">B</td></tr>
+</table>
+<p class="cap">★黄色＝その回でピンゾロを引く人。<br>50回目だけでなく100・150回目…も人が変わっていきます。</p>
+
+<div class="sec">なぜ？（4人の例で）</div>
+<div class="flow">
+<div class="flowrow"><span class="rlabel">1ラウンド</span><span class="chip parent">A親</span><span class="arrow">が親なら</span><span class="chip">B</span><span class="arrow">→</span><span class="chip">C</span><span class="arrow">→</span><span class="chip">D</span><span class="arrow">→</span><span class="chip parent">A</span><span class="count">1〜4回目</span></div>
+<div class="flowrow"><span class="rlabel">…毎ラウンド4回ずつ進む…</span></div>
+<div class="flowrow"><span class="rlabel">13ラウンド</span><span class="chip parent">A親</span><span class="arrow"></span><span class="chip">B</span><span class="arrow">→</span><span class="chip star">C★</span><span class="arrow">→</span><span class="chip">D</span><span class="arrow">→</span><span class="chip parent">A</span><span class="count">49〜52回目</span></div>
+</div>
+<p class="cap">4人だと1ラウンドで4回ぶん進むので、<br>50回目＝13ラウンド目の2番目＝<b>Cさん</b>になります。</p>
+
+<div class="sec">注意</div>
+<p class="cap">この表は「最初の親A・自動ローテ」のときの結果です。<br>手動で親を選ぶ設定や、最初の親が違うと、引く人もズレます。<br>※順番が決まっているので「誰が引くか」は読めてしまいます。</p>
+</body></html>
