@@ -154,7 +154,7 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#0d0d0d;}
-body{font-family:'Noto Sans JP',sans-serif;color:#f0f0f0;max-width:430px;margin:0 auto;min-height:100%;}
+body{font-family:'Noto Sans JP',sans-serif;color:#f0f0f0;max-width:430px;margin:0 auto;min-height:100%;overflow-x:clip;}
 #root{min-height:100vh;}
 
 @keyframes bowlShake{
@@ -517,11 +517,18 @@ function FxLayer({ runId, effect, bowlRef, dieRefs }){
 // ═══ DIE ════════════════════════════════════════════════
 function Die({ value, size=50, spin }) {
   const half = size / 2;
+  const spinning = !!spin;
 
+  // 回転中（spinning）は1フレームごとに描画し直すので、重い表現をやめて軽くする：
+  //   ・ピップ（目）は単色フラット（radial-gradient と inset影をやめる）
+  //   ・面のグラデも単色寄りに
+  // 静止時はこれまで通りリッチに見せる。出目・配置・確率には一切影響しない見た目だけの分岐。
   const face = (n, tfm, l=1) => (
     <div style={{
       position:'absolute', width:size, height:size,
-      background:`linear-gradient(145deg,hsl(38,9%,${Math.round(98*l)}%),hsl(38,9%,${Math.round(89*l)}%))`,
+      background: spinning
+        ? `hsl(38,9%,${Math.round(94*l)}%)`
+        : `linear-gradient(145deg,hsl(38,9%,${Math.round(98*l)}%),hsl(38,9%,${Math.round(89*l)}%))`,
       borderRadius:size*.13,
       border:'0.5px solid rgba(200,190,178,.6)',
       transform:tfm,
@@ -531,12 +538,14 @@ function Die({ value, size=50, spin }) {
         <div key={i} style={{
           position:'absolute',
           width:size*.2, height:size*.2, borderRadius:'50%',
-          background:n===1
-            ?'radial-gradient(circle at 35% 30%,#ff9988,#bb0000)'
-            :'radial-gradient(circle at 35% 30%,#555,#111)',
+          background: spinning
+            ? (n===1 ? '#c00' : '#222')
+            : (n===1
+              ?'radial-gradient(circle at 35% 30%,#ff9988,#bb0000)'
+              :'radial-gradient(circle at 35% 30%,#555,#111)'),
           left:`${d.x}%`, top:`${d.y}%`,
           transform:'translate(-50%,-50%)',
-          boxShadow:'inset 0 1px 3px rgba(0,0,0,.5)',
+          boxShadow: spinning ? 'none' : 'inset 0 1px 3px rgba(0,0,0,.5)',
         }}/>
       ))}
     </div>
@@ -562,14 +571,17 @@ function Die({ value, size=50, spin }) {
     <div style={{
       width:size, height:size, flexShrink:0,
       perspective:size*6, perspectiveOrigin:'50% -40%',
-      filter:`drop-shadow(0 ${size*.1}px ${size*.22}px rgba(0,0,0,.55))`,
+      // drop-shadow は毎フレーム再ラスタライズされて重い。回転中は外し、静止時だけ付ける。
+      filter: spinning ? 'none' : `drop-shadow(0 ${size*.1}px ${size*.22}px rgba(0,0,0,.55))`,
     }}>
-      {spin ? (
+      {spinning ? (
         // 回転は perspective の内側・preserve-3d でキューブごとタンブル。
         // 360の倍数で着地するので、最後は静止時と同じ＝正しい出目になる。
+        // willChange/translateZ で GPU 合成に乗せてカクつきを抑える。
         <div style={{
           width:size, height:size, position:'relative',
           transformStyle:'preserve-3d',
+          willChange:'transform',
           animation:`${spin} ${DICE_DUR} ${DICE_EASE} both`,
         }}>
           {cube}
@@ -637,23 +649,25 @@ function Bowl({ phase, dice, prevDice, easterEgg, onPhaseDone, effect }) {
         </div>
       </div>
 
-      {/* 期待感演出（炎＋カットイン）。お椀全体に重ねる。 */}
-      <FxLayer runId={fxRun} effect={effect} bowlRef={outerRef} dieRefs={dieRefs}/>
+      {/* 期待感演出（炎＋カットイン）。お椀全体に重ねる。
+          演出が無い回（effect が null）は丸ごと描画しない＝余計な canvas を DOM に置かない。 */}
+      {effect && <FxLayer runId={fxRun} effect={effect} bowlRef={outerRef} dieRefs={dieRefs}/>}
 
       {/* 飛んでくるサイコロ — 広く大きく → 縮みながら品の字へ（位置・大きさ・回転を分離）*/}
       {phase==='flying' && dice && (
         <div key={`fly-${flyKey}`} style={{position:'absolute', inset:0, pointerEvents:'none', zIndex:4}}>
           {/* グループ全体の落下（上下）*/}
-          <div style={{position:'absolute', inset:0, animation:`diceDrop ${DICE_DUR} ${DICE_EASE} both`}}>
+          <div style={{position:'absolute', inset:0, willChange:'transform', animation:`diceDrop ${DICE_DUR} ${DICE_EASE} both`}}>
             {dice.map((val, i) => (
               // 位置(間隔)レイヤー（炎がこの中心を追従する）
               <div key={i} ref={el=>{ dieRefs.current[i]=el; }} style={{
                 position:'absolute',
                 transform:'translate(-50%,-50%)',
+                willChange:'transform',
                 animation:`${POS_NAMES[i]} ${DICE_DUR} ${DICE_EASE} both`,
               }}>
                 {/* 大きさレイヤー */}
-                <div style={{animation:`diceScale ${DICE_DUR} ${DICE_EASE} both`}}>
+                <div style={{willChange:'transform', animation:`diceScale ${DICE_DUR} ${DICE_EASE} both`}}>
                   {/* 回転は Die 内部の立体キューブにかける（紙ぺらぺら防止）*/}
                   <Die value={val} size={FLY_SIZE} spin={SPIN_NAMES[(i+spinSeed)%3]}/>
                 </div>
@@ -780,7 +794,7 @@ function BettingScreen({ children, betStep, currentBet, onAdd, onReset, onConfir
   return (
     <div style={{minHeight:'calc(100vh - 56px)',display:'flex',flexDirection:'column',padding:'16px'}}>
       <div style={{textAlign:'center',marginBottom:20}}>
-        <div style={{fontSize:11,color:'#888',marginBottom:3}}>ラウンド {round} — ベット入力</div>
+        <div style={{fontSize:11,color:'#888',marginBottom:3}}>ベット入力</div>
         <div style={{fontSize:24,fontWeight:900,marginBottom:2}}>{cur?.name}さんのベット</div>
         <div style={{fontSize:12,color:'#888'}}>{betStep+1} / {children.length}人目</div>
       </div>
@@ -1478,7 +1492,8 @@ export default function App() {
         <div style={{position:'sticky',top:0,zIndex:20,background:'rgba(13,13,13,.96)',backdropFilter:'blur(8px)',padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
           <button className="btn btn-g" style={{fontSize:13,padding:'6px 12px'}} onClick={()=>{setGameCount(0);setFinalCount(0);setRollHistory([]);setScr('setup');}}>🏠</button>
           <div style={{textAlign:'center'}}>
-            <div style={{fontSize:10,color:'#555'}}>ラウンド {round}</div>
+            {/* 「何振り目か」の通し番号。振る画面の GAME バッジと同じ数字（gameCount）で全画面そろえる。 */}
+            <div style={{fontSize:10,fontWeight:900,letterSpacing:'.14em',color:'#9a8a55'}}>GAME <span style={{fontSize:12,color:'#f5c842'}}>{gameCount}</span></div>
             <div style={{fontSize:15,fontWeight:700,color:'#f5c842'}}>チンチロ</div>
           </div>
           <button className="btn btn-g" style={{fontSize:13,padding:'6px 12px'}} onClick={()=>setShowStats(true)}>📊</button>
