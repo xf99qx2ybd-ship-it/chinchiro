@@ -155,7 +155,7 @@ const CSS = `
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#0d0d0d;}
 body{font-family:'Noto Sans JP',sans-serif;color:#f0f0f0;max-width:430px;margin:0 auto;min-height:100%;overflow-x:clip;}
-#root{min-height:100vh;}
+#root{min-height:100vh;min-height:100dvh;}
 
 @keyframes bowlShake{
   0%,100%{transform:none;}
@@ -730,7 +730,7 @@ function SetupScreen({ players, setPlayers, parentIdx, setParentIdx, onStart, on
   });
 
   return (
-    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',padding:'20px 16px'}}>
+    <div style={{minHeight:'100dvh',display:'flex',flexDirection:'column',padding:'20px 16px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
         <div>
           <div style={{fontSize:30,fontWeight:900,color:'#f5c842',lineHeight:1.1}}>🎲 チンチロ</div>
@@ -792,7 +792,7 @@ function SetupScreen({ players, setPlayers, parentIdx, setParentIdx, onStart, on
 function BettingScreen({ children, betStep, currentBet, onAdd, onReset, onConfirm, round, bets }) {
   const cur = children[betStep];
   return (
-    <div style={{minHeight:'calc(100vh - 56px)',display:'flex',flexDirection:'column',padding:'16px'}}>
+    <div style={{minHeight:'calc(100dvh - 56px)',display:'flex',flexDirection:'column',padding:'16px'}}>
       <div style={{textAlign:'center',marginBottom:20}}>
         <div style={{fontSize:11,color:'#888',marginBottom:3}}>ベット入力</div>
         <div style={{fontSize:24,fontWeight:900,marginBottom:2}}>{cur?.name}さんのベット</div>
@@ -985,7 +985,7 @@ function RollingScreen({ player, isParent, bet, round, onComplete, childList, be
   ];
 
   return (
-    <div style={{position:'relative',display:'flex',flexDirection:'column',alignItems:'center',minHeight:'calc(100vh - 56px)',padding:'12px 14px 20px'}}>
+    <div style={{position:'relative',display:'flex',flexDirection:'column',alignItems:'center',minHeight:'calc(100dvh - 56px)',padding:'12px 14px 20px'}}>
       {/* 左上：ゲーム全体での「結果が確定した通し番号」 */}
       <div style={{position:'absolute',left:10,top:8,zIndex:6,display:'flex',alignItems:'baseline',gap:4,
         background:'rgba(245,200,66,.12)',border:'1px solid rgba(245,200,66,.35)',borderRadius:10,padding:'4px 11px'}}>
@@ -1123,7 +1123,7 @@ function ResultsScreen({ players, parentIdx, bets, childRes, parentRes, payouts,
   const roleOf = (p) => p.id===parent?.id ? parentRes : childRes[p.id];
 
   return (
-    <div style={{minHeight:'calc(100vh - 56px)',padding:'14px 16px',display:'flex',flexDirection:'column'}}>
+    <div style={{minHeight:'calc(100dvh - 56px)',padding:'14px 16px',display:'flex',flexDirection:'column'}}>
       {/* 役のサマリー（コンパクト）*/}
       <div style={{display:'flex',flexWrap:'wrap',gap:7,justifyContent:'center',marginBottom:16,animation:'fadeIn .3s'}}>
         {[parent, ...children].filter(Boolean).map(pl => {
@@ -1183,7 +1183,7 @@ function HistoryDie({ v }) {
 function StatsScreen({ stats, history, onBack, onReset }) {
   const { totalThrows:tt, totalTurns:tu } = stats;
   return (
-    <div style={{minHeight:'100vh',padding:'16px'}}>
+    <div style={{minHeight:'100dvh',padding:'16px'}}>
       <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
         <button className="btn btn-g" style={{fontSize:14,padding:'8px 13px'}} onClick={onBack}>← 戻る</button>
         <div style={{fontSize:20,fontWeight:700,flex:1}}>📊 出目統計</div>
