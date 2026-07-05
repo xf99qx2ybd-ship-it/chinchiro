@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>チンチロ サイコロ演出 比較モック（物理ベース）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#f0f0f0;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+  padding:18px 14px 60px;max-width:860px;margin:0 auto;-webkit-font-smoothing:antialiased}
+h1{color:#f5c842;font-size:20px;margin-bottom:6px}
+.lead{color:#999;font-size:12.5px;line-height:1.7;margin-bottom:16px}
+.lead b{color:#ddd}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px}
+.big-btn{background:linear-gradient(135deg,#f5c842,#e8a000);color:#1a0800;border:none;
+  border-radius:12px;padding:12px 24px;font-size:15px;font-weight:900;cursor:pointer;
+  box-shadow:0 5px 18px rgba(232,160,0,.35);font-family:inherit}
+.big-btn:active{transform:scale(.96)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:#bbb;cursor:pointer;user-select:none}
+.toggle input{width:18px;height:18px;accent-color:#f5c842}
+
+.panels{display:flex;gap:16px;flex-wrap:wrap}
+.panel{flex:1 1 320px;background:#181818;border:1.5px solid #2c2c2c;border-radius:18px;padding:16px 16px 14px}
+.panel h2{font-size:15px;font-weight:900;margin-bottom:2px;display:flex;align-items:center;gap:9px}
+.badge{background:#f5c842;color:#111;border-radius:7px;padding:2px 11px;font-size:14px;font-weight:900}
+.panel .note{font-size:11px;color:#777;line-height:1.6;margin-bottom:12px;min-height:44px}
+
+/* ─── お椀 ─── */
+.bowl{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:1/1}
+.bowl-bg{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:radial-gradient(ellipse at 40% 32%,
+    #fafaf8 0%,#f2efe8 12%,#e8e4db 26%,#d8d3ca 42%,#c4bfb5 55%,
+    #a9a49a 67%,#8c887e 78%,#5f5b54 89%,#242220 98%);
+  box-shadow:0 14px 46px rgba(0,0,0,.85),
+    inset 0 10px 30px rgba(255,255,255,.5),
+    inset 0 -16px 44px rgba(0,0,0,.4)}
+.bowl-bg::after{content:'';position:absolute;width:34%;height:16%;top:13%;left:24%;
+  background:radial-gradient(ellipse,rgba(255,255,255,.4),transparent 70%);border-radius:50%;filter:blur(3px)}
+.stage{position:absolute;inset:0}
+
+/* ─── サイコロ本体（JSで transform を毎フレーム更新）─── */
+.die-pos{position:absolute;left:50%;top:50%;will-change:transform}
+.die-shadow{position:absolute;left:50%;top:50%;width:44px;height:30px;
+  margin:-15px 0 0 -22px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.5) 0%,rgba(0,0,0,.28) 45%,transparent 72%);
+  will-change:transform,opacity}
+.die-lift{position:absolute;left:50%;top:50%;will-change:transform}
+.cs{width:44px;height:44px;margin:-22px 0 0 -22px;perspective:340px;perspective-origin:50% 42%}
+.cube{width:44px;height:44px;position:relative;transform-style:preserve-3d;will-change:transform}
+.face{position:absolute;width:44px;height:44px;border-radius:9px;
+  border:1px solid rgba(180,165,145,.22);backface-visibility:hidden;overflow:hidden}
+.f-top{transform:rotateX( 90deg) translateZ(22px);background:linear-gradient(145deg,#fffdf7,#f4efe4)}
+.f-bot{transform:rotateX(-90deg) translateZ(22px);background:linear-gradient(145deg,#d3cec3,#c5c0b5)}
+.f-frt{transform:             translateZ(22px);background:linear-gradient(145deg,#faf7f0,#efebe1)}
+.f-bak{transform:rotateY(180deg) translateZ(22px);background:linear-gradient(145deg,#e5e2da,#d9d5cd)}
+.f-rgt{transform:rotateY( 90deg) translateZ(22px);background:linear-gradient(145deg,#efece4,#e3dfd7)}
+.f-lft{transform:rotateY(-90deg) translateZ(22px);background:linear-gradient(145deg,#e7e4dc,#dbd7cf)}
+.dot{position:absolute;width:18%;height:18%;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#444,#000);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.r{background:radial-gradient(circle at 35% 30%,#ff5b4d,#c40000)!important}
+.p1 .dot:nth-child(1){top:41%;left:41%}
+.p2 .dot:nth-child(1){top:15%;left:15%} .p2 .dot:nth-child(2){bottom:15%;right:15%}
+.p3 .dot:nth-child(1){top:13%;left:13%} .p3 .dot:nth-child(2){top:41%;left:41%} .p3 .dot:nth-child(3){bottom:13%;right:13%}
+.p4 .dot:nth-child(1){top:15%;left:15%} .p4 .dot:nth-child(2){top:15%;right:15%} .p4 .dot:nth-child(3){bottom:15%;left:15%} .p4 .dot:nth-child(4){bottom:15%;right:15%}
+.p5 .dot:nth-child(1){top:13%;left:13%} .p5 .dot:nth-child(2){top:13%;right:13%} .p5 .dot:nth-child(3){top:41%;left:41%} .p5 .dot:nth-child(4){bottom:13%;left:13%} .p5 .dot:nth-child(5){bottom:13%;right:13%}
+.p6 .dot:nth-child(1){top:13%;left:15%} .p6 .dot:nth-child(2){top:13%;right:15%} .p6 .dot:nth-child(3){top:41%;left:15%} .p6 .dot:nth-child(4){top:41%;right:15%} .p6 .dot:nth-child(5){bottom:13%;left:15%} .p6 .dot:nth-child(6){bottom:13%;right:15%}
+.footer{margin-top:22px;font-size:11px;color:#555;line-height:1.7}
+</style>
+</head>
+<body>
+<h1>🎲 サイコロ演出 比較モック（物理ベース・60fps）</h1>
+<p class="lead">
+「画像を回す」のではなく、<b>質量のあるサイコロを投げて転がす</b>物理シミュレーションで動かしています。<br>
+勢いよく飛び出し → 摩擦で自然に減速（イージングは物理由来で linear ではありません）→ 少しバウンド → 転がって、止まる瞬間に<b>ほんの少し揺れて</b>静止します。回転は移動と同期し、3個とも毎回ちがう軌道を描きます。<br>
+<b>①と②を見比べて</b>、どちらが好みか教えてください。「ループ再生」を ON にすると自動でくり返します。
+</p>
+
+<div class="controls">
+  <button class="big-btn" id="throwBtn">▶ 両方いっしょに投げる</button>
+  <label class="toggle"><input type="checkbox" id="loopChk" checked> ループ再生（自動でくり返す）</label>
+</div>
+
+<div class="panels">
+  <div class="panel">
+    <h2><span class="badge">①</span> ぶつからない</h2>
+    <div class="note">3個がそれぞれ独立した軌道で転がり、お互いにぶつからずに自然停止。すっきり見やすい。</div>
+    <div class="bowl"><div class="bowl-bg"></div><div class="stage" id="stageA"></div></div>
+    <button class="big-btn" style="margin:14px auto 0;display:block;font-size:13px;padding:9px 20px" data-throw="A">投げ直す</button>
+  </div>
+  <div class="panel">
+    <h2><span class="badge">②</span> 軽くぶつかる</h2>
+    <div class="note">サイコロ同士が1〜2回だけ軽く衝突し、自然に弾かれる。物理的な質量感・迫力が出る。</div>
+    <div class="bowl"><div class="bowl-bg"></div><div class="stage" id="stageB"></div></div>
+    <button class="big-btn" style="margin:14px auto 0;display:block;font-size:13px;padding:9px 20px" data-throw="B">投げ直す</button>
+  </div>
+</div>
+
+<div class="footer">
+  ※ これは動きを比較するためのモックです。本体のゲームにはまだ反映していません。<br>
+  ※ サイコロの出目はモック用のランダム表示で、確率や勝敗ロジックとは無関係です。
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  サイコロ物理モック
+//  ・座標(x,y)＝お椀を上から見た平面 / z＝高さ（放り投げの弧＆バウンド）
+//  ・速度は摩擦で指数的に減衰 → 自然な ease-out（linearではない）
+//  ・回転角は「移動速度」に比例（回転と移動を同期）＋投げた瞬間のスピン
+//  ・止まり際はバネで目標角へ寄せつつ小さく揺れてから静止
+//  ・②は円同士の弾性衝突を最大2回だけ許可（それ以降はめり込み防止のみ）
+// ════════════════════════════════════════════════════════════
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+// --- サイコロDOMを作る（6面キューブ＋目）---
+const PIPS={1:1,2:2,3:3,4:4,5:5,6:6};
+function pip(n){let s='';for(let i=0;i<PIPS[n];i++)s+=`<div class="dot${n===1?' r':''}"></div>`;return `<div class="p${n}">${s}</div>`;}
+function makeDieEl(top,frt,rgt){
+  const pos=document.createElement('div'); pos.className='die-pos';
+  pos.innerHTML=`
+    <div class="die-shadow"></div>
+    <div class="die-lift"><div class="cs"><div class="cube">
+      <div class="face f-top">${pip(top)}</div>
+      <div class="face f-bot">${pip(7-top)}</div>
+      <div class="face f-frt">${pip(frt)}</div>
+      <div class="face f-bak">${pip(7-frt)}</div>
+      <div class="face f-rgt">${pip(rgt)}</div>
+      <div class="face f-lft">${pip(7-rgt)}</div>
+    </div></div></div>`;
+  return {pos, shadow:pos.querySelector('.die-shadow'), lift:pos.querySelector('.die-lift'), cube:pos.querySelector('.cube')};
+}
+
+// --- お椀（3個のサイコロを持つシミュレーション）---
+const DIE_R=22;            // 見た目 44px の半径
+function makeBowl(stageEl, collide){
+  const dice=[];
+  for(let i=0;i<3;i++){
+    const el=makeDieEl(Math.ceil(rnd(1,6)),Math.ceil(rnd(1,6)),Math.ceil(rnd(1,6)));
+    stageEl.appendChild(el.pos);
+    dice.push({el, x:0,y:0,vx:0,vy:0, z:0,vz:0, rx:0,ry:0, sx:0,sy:0,
+      avx:0,avy:0, rxT:0,ryT:0, launch:0, resting:false, done:false});
+  }
+  return {stageEl, collide, dice, BR:120, hits:0, reset, active:false};
+  function reset(){
+    // お椀の実寸から半径を取り直す（レスポンシブ対応）
+    const w=stageEl.clientWidth||280; this.BR=w/2;
+    this.hits=0; this.active=true;
+    // 上のほうから投げ込む。3個をそれぞれ違う向き・違うスピンで。
+    const R=this.BR;
+    const aim=[ {x:-0.42,y:-0.62}, {x:0.06,y:-0.78}, {x:0.44,y:-0.60} ]; // 開始位置（上寄せ・少しばらける）
+    for(let i=0;i<3;i++){
+      const d=dice[i];
+      // 開始位置：お椀上部
+      d.x=R*aim[i].x + rnd(-8,8);
+      d.y=R*aim[i].y + rnd(-6,6);
+      d.z=rnd(46,72);            // 高さ（放り込みの弧）
+      d.vz=rnd(0.4,2.2);         // 最初ほんの少し上昇→重力で落下→バウンド
+      // 速度：全体に下へ、かつ扇状に散らす（毎回ちがう軌道）
+      let dir, sp;
+      if(collide){
+        // ②はぶつかりやすいよう中央に寄せて放つ（ただし1〜2回で収まる強さ）
+        dir=Math.atan2(0.75, (i-1)*0.55) + rnd(-0.12,0.12);
+        sp=rnd(5.4,6.6);
+      }else{
+        // ①は外側に扇状（すれ違わず独立して散る）
+        dir=Math.atan2(0.8, (i-1)*1.15) + rnd(-0.1,0.1);
+        sp=rnd(5.0,6.2);
+      }
+      d.vx=Math.cos(dir)*sp; d.vy=Math.sin(dir)*sp;
+      // 回転の初速（勢いよくタンブル）＋出目もランダムに振り直し
+      d.rx=rnd(0,360); d.ry=rnd(0,360);
+      d.sx=rnd(-22,22); d.sy=rnd(-22,22);
+      d.avx=0; d.avy=0; d.resting=false; d.done=false; d.launch=6; // 最初6フレームは加速
+      d._speed0=sp;
+    }
+  }
+}
+
+// 物理定数（60fps・1フレーム基準。dtで正規化）
+const GRAV=1.15;       // 高さ方向の重力
+const REST_Z=0.44;     // 着地バウンドの反発
+const FR_GROUND=0.945; // 接地時の摩擦（1フレームあたり）→ 指数減衰＝自然なease-out
+const FR_AIR=0.992;    // 空中の抵抗
+const ROT_K=2.7;       // 「移動px」あたりの回転量（回転と移動の同期係数）
+const SPIN_DECAY=0.93; // 投げた瞬間スピンの減衰
+const STOP_SPD=0.14;   // これ以下で静止判定へ
+
+function stepBowl(sim, dt){
+  if(!sim.active) return;
+  const R=sim.BR, maxD=R-DIE_R;
+  const D=sim.dice;
+  for(const d of D){
+    if(d.done) continue;
+    // --- 投げ出し直後の短い加速（勢いよく飛び出す）---
+    if(d.launch>0){ d.vx*=1.045; d.vy*=1.045; d.launch-=dt; }
+    // --- 高さ（弧＆バウンド）---
+    if(d.z>0 || d.vz!==0){
+      d.vz-=GRAV*dt; d.z+=d.vz*dt;
+      if(d.z<=0){ d.z=0;
+        if(d.vz<-0.6){ d.vz=-d.vz*REST_Z; }   // バウンド
+        else d.vz=0;                            // 着地して止まる
+      }
+    }
+    const grounded = d.z<=0.6;
+    // --- 水平の摩擦（接地でよく効く＝転がって止まる）---
+    const f=grounded?FR_GROUND:FR_AIR;
+    const ff=Math.pow(f,dt); d.vx*=ff; d.vy*=ff;
+    // --- 位置を進める ---
+    d.x+=d.vx*dt; d.y+=d.vy*dt;
+    // --- お椀の壁で軽く跳ね返る ---
+    const dist=Math.hypot(d.x,d.y);
+    if(dist>maxD){
+      const nx=d.x/dist, ny=d.y/dist;
+      const vn=d.vx*nx+d.vy*ny;
+      if(vn>0){ d.vx-=1.55*vn*nx; d.vy-=1.55*vn*ny; d.vx*=0.7; d.vy*=0.7; }
+      d.x=nx*maxD; d.y=ny*maxD;
+      d.sx+=rnd(-4,4); d.sy+=rnd(-4,4); // 壁ヒットで少しスピン
+    }
+    const speed=Math.hypot(d.vx,d.vy);
+    if(!d.resting){
+      // --- 回転＝移動に同期（＋投げスピン、減衰）---
+      d.rx += (ROT_K*d.vy + d.sx)*dt;
+      d.ry += (ROT_K*d.vx + d.sy)*dt;
+      const sd=Math.pow(SPIN_DECAY,dt); d.sx*=sd; d.sy*=sd;
+      // --- 静止判定 ---
+      if(grounded && speed<STOP_SPD && Math.abs(d.vz)<0.2){
+        d.resting=true;
+        d.rxT=Math.round(d.rx/90)*90; d.ryT=Math.round(d.ry/90)*90;
+        d.avx=rnd(-5,5); d.avy=rnd(-5,5); // 最後に「ほんの少し揺れる」ためのキック
+        d.vx=d.vy=0;
+      }
+    } else {
+      // --- 止まり際：目標角へバネで寄せつつ一度だけ小さくオーバーシュート（揺れて静止）---
+      d.avx += (d.rxT-d.rx)*0.16*dt; d.avx*=Math.pow(0.74,dt); d.rx+=d.avx*dt;
+      d.avy += (d.ryT-d.ry)*0.16*dt; d.avy*=Math.pow(0.74,dt); d.ry+=d.avy*dt;
+      if(Math.abs(d.rxT-d.rx)<0.25 && Math.abs(d.ryT-d.ry)<0.25 &&
+         Math.abs(d.avx)<0.25 && Math.abs(d.avy)<0.25){
+        d.rx=d.rxT; d.ry=d.ryT; d.done=true;
+      }
+    }
+  }
+  // --- サイコロ同士の当たり（②のみ本気で弾く。①はめり込み防止のみ）---
+  const minD=DIE_R*2*0.92;
+  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){
+    const a=D[i], b=D[j];
+    let dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy);
+    if(dist>0 && dist<minD){
+      const nx=dx/dist, ny=dy/dist, overlap=(minD-dist);
+      // まずめり込みを解消（両者を半分ずつ押し戻す）
+      a.x-=nx*overlap/2; a.y-=ny*overlap/2;
+      b.x+=nx*overlap/2; b.y+=ny*overlap/2;
+      const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny; // 近づく向きの相対速度
+      if(rel<0 && sim.collide && sim.hits<2 && !a.resting && !b.resting){
+        // 等質量の弾性衝突（法線成分を交換）＋少し減衰
+        const imp=-rel*0.9;
+        a.vx-=imp*nx; a.vy-=imp*ny;
+        b.vx+=imp*nx; b.vy+=imp*ny;
+        // ぶつかった衝撃で少しスピンを足す（質量感）
+        a.sx+=rnd(-6,6); a.sy+=rnd(-6,6); b.sx+=rnd(-6,6); b.sy+=rnd(-6,6);
+        sim.hits++;
+      }
+    }
+  }
+  // --- 描画 ---
+  let allDone=true;
+  for(const d of D){
+    if(!d.done) allDone=false;
+    const depth=1+d.z*0.0045;                  // 高いほど少し大きく（奥行き）
+    d.el.pos.style.transform=`translate(${d.x}px,${d.y}px)`;
+    d.el.lift.style.transform=`translateY(${-d.z}px) scale(${depth})`;
+    d.el.cube.style.transform=`rotateX(${d.rx}deg) rotateY(${d.ry}deg)`;
+    const sh=clamp(1-d.z/150,0.35,1);
+    d.el.shadow.style.transform=`scale(${1+d.z*0.006})`;
+    d.el.shadow.style.opacity=(0.5*sh).toFixed(3);
+  }
+  if(allDone) sim.active=false;
+}
+
+// ── セットアップ＆ループ ──
+const simA=makeBowl(document.getElementById('stageA'), false);
+const simB=makeBowl(document.getElementById('stageB'), true);
+const loopChk=document.getElementById('loopChk');
+
+let last=performance.now(), idleAt=0;
+function frame(now){
+  let dt=(now-last)/16.667; last=now; dt=clamp(dt,0.1,3);
+  stepBowl(simA,dt); stepBowl(simB,dt);
+  // ループ再生：両方止まったら少し待って投げ直す
+  if(!simA.active && !simB.active){
+    if(loopChk.checked){
+      if(!idleAt) idleAt=now;
+      else if(now-idleAt>1100){ throwBoth(); idleAt=0; }
+    }
+  } else idleAt=0;
+  requestAnimationFrame(frame);
+}
+function throwBoth(){ simA.reset(); simB.reset(); }
+function throwOne(k){ (k==='A'?simA:simB).reset(); }
+
+document.getElementById('throwBtn').addEventListener('click',()=>{ throwBoth(); idleAt=0; });
+document.querySelectorAll('[data-throw]').forEach(b=>
+  b.addEventListener('click',()=>{ throwOne(b.dataset.throw); idleAt=0; }));
+
+// 初回：レイアウト確定後に投げる
+requestAnimationFrame(()=>{ throwBoth(); requestAnimationFrame(frame); });
+</script>
+</body>
+</html>

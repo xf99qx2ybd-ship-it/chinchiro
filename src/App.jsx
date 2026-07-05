@@ -177,10 +177,11 @@ body{font-family:'Noto Sans JP',sans-serif;color:#f0f0f0;max-width:430px;margin:
 @keyframes posBr {0%{left:80%;top:80%;}100%{left:58%;top:57%;}}
 /* 大きさ：大 → 小（落下の奥行き感。最後ポン）*/
 @keyframes diceScale{0%{transform:scale(2.40);}82%{transform:scale(0.50);}91%{transform:scale(0.60);}100%{transform:scale(0.56);}}
-/* 回転：立体キューブを2軸でくるくる → 360の倍数で着地（＝上面の出目がまっすぐ出る）*/
-@keyframes diceSpin1{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(1440deg) rotateY(1080deg) rotateZ(0);}}
-@keyframes diceSpin2{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(1080deg) rotateY(1440deg) rotateZ(0);}}
-@keyframes diceSpin3{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(1800deg) rotateY(1080deg) rotateZ(0);}}
+/* 回転：立体キューブを2軸でくるくる → 360の倍数で着地（＝上面の出目がまっすぐ出る）
+   ②「速い」採用：イージング・時間はそのまま、総回転量だけ+2回転して速く（すべて360の倍数）*/
+@keyframes diceSpin1{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(2160deg) rotateY(1800deg) rotateZ(0);}}
+@keyframes diceSpin2{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(1800deg) rotateY(2160deg) rotateZ(0);}}
+@keyframes diceSpin3{0%{transform:rotateX(0) rotateY(0) rotateZ(0);}100%{transform:rotateX(2520deg) rotateY(1800deg) rotateZ(0);}}
 @keyframes dieOut{0%{opacity:1;transform:none;}15%{opacity:1;}100%{opacity:0;transform:translate(var(--ox),var(--oy)) rotate(1800deg) scale(0.04);}}
 @keyframes reveal{0%{transform:scale(.2) rotate(-12deg);opacity:0;}55%{transform:scale(1.2) rotate(2deg);}80%{transform:scale(.96) rotate(-1deg);}100%{transform:scale(1);opacity:1;}}
 @keyframes floatUp{0%{transform:translateY(0);opacity:1;}20%{opacity:1;}100%{transform:translateY(-60px) scale(.8);opacity:0;}}
@@ -901,7 +902,7 @@ function PlayerStrip({ roster }) {
 }
 
 // ═══ ROLLING SCREEN ══════════════════════════════════════
-function RollingScreen({ player, isParent, bet, round, onComplete, childList, bets, childRes, parent, parentRes, rollStep, gameCount, forcePinzoro, effectsOn }) {
+function RollingScreen({ player, isParent, bet, round, onComplete, childList, bets, childRes, parent, parentRes, rollStep, gameCount, forcePinzoro, forceArashi, onForceArashiUsed, effectsOn }) {
   const [history, setHistory] = useState([]);
   const [finalRes, setFinalRes] = useState(null);
   const [bowlPhase, setBowlPhase] = useState('idle');
@@ -920,10 +921,14 @@ function RollingScreen({ player, isParent, bet, round, onComplete, childList, be
     // ゲームのテンポ維持：結果が確定した累計が50の倍数になるターンは、最初の一投を必ずピンゾロにする。
     // （プレイヤーには条件を見せない。ピンゾロは即・役確定なので振り直しも起こらない。）
     const mustPinzoro = forcePinzoro && rollCount===0;
-    const dice = mustPinzoro ? [1,1,1] : rollDice();
+    // 出目統計リセット直後の「次の一投だけアラシ（2〜6のゾロ目）」。ピンゾロ強制ターンが優先。
+    const mustArashi  = !mustPinzoro && forceArashi && rollCount===0;
+    const arashiK = 2 + Math.floor(Math.random()*5);   // 2〜6のいずれかのゾロ目
+    const dice = mustPinzoro ? [1,1,1] : mustArashi ? [arashiK,arashiK,arashiK] : rollDice();
+    if(mustArashi) onForceArashiUsed?.();              // 一回使ったらフラグを解除（次からは通常）
     // 1%（1/100）の確率でションベン＝サイコロがお椀の外へ飛び出す（即・負け）。1回振るごとに判定。
-    // ただし強制ピンゾロのターンはションベン判定を無効化する（必ずピンゾロを出すため）。
-    const isShonben = !mustPinzoro && Math.random() < 0.01;
+    // ただし強制ピンゾロ・強制アラシのターンはションベン判定を無効化する（必ずその目を出すため）。
+    const isShonben = !mustPinzoro && !mustArashi && Math.random() < 0.01;
     const res = isShonben
       ? { t:'shonben', l:'ションベン', sk:'ションベン', v:null }
       : classify(dice);
@@ -1069,9 +1074,10 @@ function ScoreRow({ name, initial, isParent, medal, res, delta, newScore, maxAbs
   const [showDelta, setShowDelta] = useState(false);
   useEffect(() => { const t = setTimeout(() => setShowDelta(true), delay); return () => clearTimeout(t); }, [delay]);
 
-  const scoreCol = val > 0 ? '#44cc88' : val < 0 ? '#ff5555' : '#aaa';
+  const totalCol = '#f5c842';                                            // 現在の得点＝ゴールド（増減の赤緑とハッキリ区別）
+  const barCol   = val > 0 ? '#44cc88' : val < 0 ? '#ff5555' : '#888';   // スコアバーの光（＋緑／−赤）
   const barPct = maxAbs > 0 ? Math.min(Math.abs(val) / maxAbs * 100, 100) : 0;
-  const dCol = delta > 0 ? '#44cc88' : delta < 0 ? '#ff5555' : '#888';
+  const dCol = delta > 0 ? '#44cc88' : delta < 0 ? '#ff5555' : '#888';   // 増減（＋緑／−赤）
 
   return (
     <div style={{ padding:'12px 14px', borderRadius:14, marginBottom:10,
@@ -1096,12 +1102,12 @@ function ScoreRow({ name, initial, isParent, medal, res, delta, newScore, maxAbs
           <div style={{ marginTop:7, height:8, borderRadius:5, background:'rgba(0,0,0,.45)', overflow:'hidden' }}>
             <div style={{ height:'100%', width:`${barPct}%`,
               background: val >= 0 ? 'linear-gradient(90deg,#2e9e6a,#44cc88)' : 'linear-gradient(90deg,#cc4444,#ff5555)',
-              boxShadow:`0 0 8px ${scoreCol}`, transition:'width .12s linear', borderRadius:5 }}/>
+              boxShadow:`0 0 8px ${barCol}`, transition:'width .12s linear', borderRadius:5 }}/>
           </div>
         </div>
         <div style={{ textAlign:'right', flexShrink:0, minWidth:74 }}>
-          <div style={{ fontSize:24, fontWeight:900, fontFamily:'monospace', color:scoreCol, lineHeight:1,
-            textShadow:`0 0 12px ${val>0?'rgba(68,204,136,.4)':val<0?'rgba(255,85,85,.4)':'transparent'}` }}>
+          <div style={{ fontSize:24, fontWeight:900, fontFamily:'monospace', color:totalCol, lineHeight:1,
+            textShadow:'0 0 12px rgba(245,200,66,.45)' }}>
             {val > 0 ? '+' : ''}{val.toLocaleString()}
           </div>
           {showDelta && delta !== 0 && (
@@ -1343,6 +1349,7 @@ export default function App() {
   const [finalCount, setFinalCount] = useState(0); // ホームに戻るまでの「結果が確定した累計回数」。50ごとにピンゾロ。
   const FORCE_PINZORO_EVERY = 50;
   const [rollHistory, setRollHistory] = useState([]); // 最新の出目履歴（確定結果のみ・最大100件）。ホームでリセット。
+  const [forceArashiNext, setForceArashiNext] = useState(false); // 出目統計リセット直後の「次の一投だけアラシ」フラグ。
 
   // localStorage を使って統計・設定を保存（ブラウザ対応版）
   useEffect(()=>{
@@ -1470,7 +1477,7 @@ export default function App() {
           ターン中の状態（確定出目・振り直し回数・進行など）を保持する。閉じると元の状態から再開。 */}
       {showStats && (
         <div style={{position:'fixed',top:0,bottom:0,left:0,right:0,maxWidth:430,margin:'0 auto',background:'#0d0d0d',zIndex:60,overflowY:'auto'}}>
-          <StatsScreen stats={stats} history={rollHistory} onBack={()=>setShowStats(false)} onReset={()=>{setStats(INIT_STATS);save(INIT_STATS);}}/>
+          <StatsScreen stats={stats} history={rollHistory} onBack={()=>setShowStats(false)} onReset={()=>{setStats(INIT_STATS);save(INIT_STATS);setForceArashiNext(true);}}/>
         </div>
       )}
 
@@ -1521,6 +1528,8 @@ export default function App() {
           rollStep={rollStep}
           gameCount={gameCount}
           forcePinzoro={(finalCount + 1) % FORCE_PINZORO_EVERY === 0}
+          forceArashi={forceArashiNext}
+          onForceArashiUsed={()=>setForceArashiNext(false)}
           effectsOn={effectsOn}
           onComplete={onRollDone}
         />

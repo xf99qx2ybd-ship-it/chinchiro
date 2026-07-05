@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>チンチロ 回転を速くするだけ（今の動きそのまま）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#fff;font-family:sans-serif;padding:16px;max-width:460px;margin:0 auto}
+h2{color:#f5c842;margin-bottom:6px;font-size:16px;line-height:1.4}
+.lead{color:#bbb;font-size:12.5px;margin-bottom:14px;line-height:1.7}
+.lead b{color:#fff}
+.ctrl{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.throw{background:linear-gradient(180deg,#ffd24a,#f0a81e);color:#3a2600;border:none;border-radius:12px;
+  padding:12px 22px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(240,168,30,.4)}
+.throw:active{transform:scale(.96)}
+.loop{display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;cursor:pointer;user-select:none}
+.loop input{width:17px;height:17px;accent-color:#f5c842}
+
+.panel{background:#1b1b1b;border:1.5px solid #333;border-radius:16px;padding:14px 12px 16px;margin-bottom:16px}
+.plabel{font-size:14px;font-weight:800;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.plabel .no{background:#f5c842;color:#111;border-radius:7px;width:22px;height:22px;display:inline-flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:900}
+.pdesc{font-size:11.5px;color:#8f8f8f;margin:0 2px 10px;line-height:1.6}
+.pdesc b{color:#cdb968}
+
+.bowl{position:relative;width:300px;padding-bottom:300px;margin:0 auto}
+.bowl-inner{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:radial-gradient(ellipse at 40% 34%, #fafaf8 0%, #f2efe8 11%, #eae6de 25%, #ddd9d0 42%, #cec9c0 56%, #b2aea4 68%, #8c887e 78%, #5a5650 88%, #262220 96%, #0c0a08 100%);
+  box-shadow:0 16px 55px rgba(0,0,0,.92),0 5px 18px rgba(0,0,0,.6),inset 0 10px 36px rgba(255,255,255,.55),inset 0 -18px 52px rgba(0,0,0,.44)}
+.bowl-hl{position:absolute;width:36%;height:18%;top:12%;left:22%;border-radius:50%;filter:blur(4px);pointer-events:none;
+  background:radial-gradient(ellipse,rgba(255,255,255,.38) 0%,transparent 70%)}
+.settled{position:absolute;inset:0}
+.fly{position:absolute;inset:0;pointer-events:none;z-index:4}
+
+.redo{display:block;margin:12px auto 0;background:#2e2e2e;color:#cfc9bb;border:1px solid #4a4638;border-radius:9px;
+  padding:7px 26px;font-size:13px;cursor:pointer}
+.redo:hover{background:#3a382c;color:#fff}
+.note{font-size:11px;color:#666;line-height:1.7;margin-top:6px}
+
+/* 落下・大きさ・間隔・止まり方は今のアプリそのまま：全パターン共通 */
+@keyframes posTop{0%{left:50%;top:15%}100%{left:50%;top:44%}}
+@keyframes posBl {0%{left:20%;top:80%}100%{left:42%;top:57%}}
+@keyframes posBr {0%{left:80%;top:80%}100%{left:58%;top:57%}}
+@keyframes diceDrop{0%{transform:translateY(-34px);opacity:0}7%{opacity:1}82%{transform:translateY(7px)}91%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+@keyframes diceScale{0%{transform:scale(2.40)}82%{transform:scale(0.50)}91%{transform:scale(0.60)}100%{transform:scale(0.56)}}
+/* 回転キーフレームは JS で生成（イージングは今のまま。総回転量＝速さだけ変える）*/
+</style>
+</head>
+<body>
+
+<h2>🎲 回転を速くするだけ（今の動き・止まり方はそのまま）</h2>
+<p class="lead">
+落下・大きさ・止まり方（だんだん減速して着地）は<b>今のアプリと全く同じ</b>。イージングも同じ。<br>
+変えたのは<b>回転の量（＝速さ）だけ</b>です。①現在 → ②速い → ③もっと速い、を見比べて好みの速さを選んでください。
+</p>
+
+<div class="ctrl">
+  <button class="throw" id="throwAll">▶ 3つ同時に投げる</button>
+  <label class="loop"><input type="checkbox" id="loopChk" checked> ループ再生（自動でくり返す）</label>
+</div>
+
+<div class="panel" data-pat="cur">
+  <div class="plabel"><span class="no">1</span> 現在（そのまま）</div>
+  <div class="pdesc">今の本番アプリと同じ。約 4〜5 回転。</div>
+  <div class="bowl"><div class="bowl-inner"><div class="bowl-hl"></div><div class="settled"></div></div><div class="fly"></div></div>
+  <button class="redo">投げ直す</button>
+</div>
+
+<div class="panel" data-pat="fast">
+  <div class="plabel"><span class="no">2</span> 速い</div>
+  <div class="pdesc">動きは①と全く同じ。<b>回転量だけ増やして速く</b>（約 6〜7 回転）。</div>
+  <div class="bowl"><div class="bowl-inner"><div class="bowl-hl"></div><div class="settled"></div></div><div class="fly"></div></div>
+  <button class="redo">投げ直す</button>
+</div>
+
+<div class="panel" data-pat="faster">
+  <div class="plabel"><span class="no">3</span> もっと速い</div>
+  <div class="pdesc">動きは①と全く同じ。<b>さらに回転量アップ</b>（約 8〜9 回転）。</div>
+  <div class="bowl"><div class="bowl-inner"><div class="bowl-hl"></div><div class="settled"></div></div><div class="fly"></div></div>
+  <button class="redo">投げ直す</button>
+</div>
+
+<p class="note">
+※ これは動きを比較するためのモックです。本体のゲームにはまだ反映していません。<br>
+※ 出目はモック用のランダム表示で、確率や勝敗ロジックとは無関係です。
+</p>
+
+<script>
+const DOTS={1:[{x:50,y:50}],2:[{x:27,y:27},{x:73,y:73}],3:[{x:27,y:27},{x:50,y:50},{x:73,y:73}],
+  4:[{x:27,y:27},{x:73,y:27},{x:27,y:73},{x:73,y:73}],
+  5:[{x:27,y:27},{x:73,y:27},{x:50,y:50},{x:27,y:73},{x:73,y:73}],
+  6:[{x:27,y:22},{x:73,y:22},{x:27,y:50},{x:73,y:50},{x:27,y:78},{x:73,y:78}]};
+const FACE_ROTS={1:'rotateX(0deg)',2:'rotateX(-90deg)',3:'rotateY(-90deg)',4:'rotateY(90deg)',5:'rotateX(90deg)',6:'rotateY(180deg)'};
+const POS_NAMES=['posTop','posBl','posBr'];
+const FINAL_POS=[['50%','44%'],['42%','57%'],['58%','57%']];
+const APP_EASE='cubic-bezier(.3,.1,.3,1)';   // ← 今のアプリと同じイージング（変えない）
+
+/* 各パターンの総回転量。すべて360の倍数＝出目は正しく上を向く。
+   現在=今のアプリ / 速い=+720(2回転) / もっと速い=+1440(4回転) */
+const SPINSETS={
+  cur:   [[1440,1080],[1080,1440],[1800,1080]],
+  fast:  [[2160,1800],[1800,2160],[2520,1800]],
+  faster:[[2880,2520],[2520,2880],[3240,2520]],
+};
+
+/* 回転キーフレーム生成（0→総回転。イージングは要素側で APP_EASE を掛ける＝今と同じ）*/
+(function genSpins(){
+  let css='';
+  for(const key in SPINSETS){
+    SPINSETS[key].forEach(([X,Y],i)=>{
+      css+=`@keyframes ${key}Spin${i+1}{0%{transform:rotateX(0) rotateY(0)}100%{transform:rotateX(${X}deg) rotateY(${Y}deg)}}`;
+    });
+  }
+  const s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
+})();
+
+const PAT={
+  cur   :{spin:['curSpin1','curSpin2','curSpin3']},
+  fast  :{spin:['fastSpin1','fastSpin2','fastSpin3']},
+  faster:{spin:['fasterSpin1','fasterSpin2','fasterSpin3']},
+};
+const DUR='1.25s', SETTLE=1300;
+
+function faceHTML(n,tfm,l,size,spinning){
+  const bg = spinning ? `hsl(38,9%,${Math.round(94*l)}%)`
+    : `linear-gradient(145deg,hsl(38,9%,${Math.round(98*l)}%),hsl(38,9%,${Math.round(89*l)}%))`;
+  const dots=(DOTS[n]||[]).map(d=>{
+    const db = spinning ? (n===1?'#c00':'#222')
+      : (n===1?'radial-gradient(circle at 35% 30%,#ff9988,#bb0000)':'radial-gradient(circle at 35% 30%,#555,#111)');
+    const sh = spinning?'none':'inset 0 1px 3px rgba(0,0,0,.5)';
+    return `<div style="position:absolute;width:${size*.2}px;height:${size*.2}px;border-radius:50%;background:${db};left:${d.x}%;top:${d.y}%;transform:translate(-50%,-50%);box-shadow:${sh}"></div>`;
+  }).join('');
+  return `<div style="position:absolute;width:${size}px;height:${size}px;background:${bg};border-radius:${size*.13}px;border:0.5px solid rgba(200,190,178,.6);transform:${tfm};backface-visibility:hidden">${dots}</div>`;
+}
+function dieHTML(value,size,spinName){
+  const half=size/2, spinning=!!spinName;
+  const faces=[
+    faceHTML(1,`translateZ(${half}px)`,1.00,size,spinning),
+    faceHTML(6,`rotateY(180deg) translateZ(${half}px)`,0.72,size,spinning),
+    faceHTML(2,`rotateX(90deg) translateZ(${half}px)`,0.93,size,spinning),
+    faceHTML(5,`rotateX(-90deg) translateZ(${half}px)`,0.80,size,spinning),
+    faceHTML(3,`rotateY(90deg) translateZ(${half}px)`,0.86,size,spinning),
+    faceHTML(4,`rotateY(-90deg) translateZ(${half}px)`,0.82,size,spinning),
+  ].join('');
+  const cube=`<div style="width:${size}px;height:${size}px;position:relative;transform-style:preserve-3d;transform:${FACE_ROTS[value]||'rotateX(0deg)'}">${faces}</div>`;
+  const inner = spinning
+    ? `<div style="width:${size}px;height:${size}px;position:relative;transform-style:preserve-3d;will-change:transform;animation:${spinName} ${DUR} ${APP_EASE} both">${cube}</div>`
+    : cube;
+  const filt = spinning?'none':`drop-shadow(0 ${size*.1}px ${size*.22}px rgba(0,0,0,.55))`;
+  return `<div style="width:${size}px;height:${size}px;perspective:${size*6}px;perspective-origin:50% -40%;filter:${filt}">${inner}</div>`;
+}
+function flyHTML(cfg,vals,seed){
+  let inner='';
+  for(let i=0;i<3;i++){
+    const spin=cfg.spin[(i+seed)%3];
+    inner += `<div style="position:absolute;transform:translate(-50%,-50%);will-change:transform;animation:${POS_NAMES[i]} ${DUR} ${APP_EASE} both">
+      <div style="will-change:transform;animation:diceScale ${DUR} ${APP_EASE} both">${dieHTML(vals[i],60,spin)}</div></div>`;
+  }
+  return `<div style="position:absolute;inset:0;will-change:transform;animation:diceDrop ${DUR} ${APP_EASE} both">${inner}</div>`;
+}
+function settledHTML(vals){
+  return vals.map((v,i)=>`<div style="position:absolute;left:${FINAL_POS[i][0]};top:${FINAL_POS[i][1]};transform:translate(-50%,-50%)">${dieHTML(v,34,null)}</div>`).join('');
+}
+
+const rndFace=()=>1+Math.floor(Math.random()*6);
+function playPanel(panel,vals,seed){
+  const cfg=PAT[panel.dataset.pat];
+  const fly=panel.querySelector('.fly'), settled=panel.querySelector('.settled');
+  settled.innerHTML='';
+  fly.innerHTML=''; void fly.offsetWidth;
+  fly.innerHTML=flyHTML(cfg,vals,seed);
+  clearTimeout(panel._t);
+  panel._t=setTimeout(()=>{ fly.innerHTML=''; settled.innerHTML=settledHTML(vals); }, SETTLE);
+}
+const panels=[...document.querySelectorAll('.panel')];
+const loopChk=document.getElementById('loopChk');
+let loopT=null;
+function throwAll(){
+  const vals=[rndFace(),rndFace(),rndFace()];
+  const seed=Math.floor(Math.random()*3);
+  panels.forEach(p=>playPanel(p,vals,seed));
+  clearTimeout(loopT);
+  if(loopChk.checked) loopT=setTimeout(throwAll, SETTLE+1100);
+}
+document.getElementById('throwAll').addEventListener('click', throwAll);
+panels.forEach(p=>p.querySelector('.redo').addEventListener('click',()=>{
+  playPanel(p,[rndFace(),rndFace(),rndFace()],Math.floor(Math.random()*3));
+}));
+throwAll();
+</script>
+</body>
+</html>
