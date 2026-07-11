@@ -42,7 +42,7 @@ const STAT_KEYS = ['ピンゾロ','アラシ','シゴロ','6の目','5の目','4
 const THEORY = {
   'ピンゾロ':1/216,'アラシ':5/216,'シゴロ':6/216,
   '6の目':15/216,'5の目':15/216,'4の目':15/216,'3の目':15/216,'2の目':15/216,'1の目':15/216,
-  '目なし':108/216,'ヒフミ':6/216,'ションベン':0.01,
+  '目なし':108/216,'ヒフミ':6/216,'ションベン':0.001,
 };
 const INIT_STATS = { totalThrows:0, totalTurns:0, counts: Object.fromEntries(STAT_KEYS.map(k=>[k,0])) };
 
@@ -79,32 +79,37 @@ function getRank(r) {
 }
 
 // ── 役ごとの倍率 ──────────────────────────────────────────
-// 勝ち役・負け役それぞれが固有の倍率を持つ。最終倍率は「親の役倍率 × 子の役倍率」。
-//   ピンゾロ ×5 / アラシ ×3 / シゴロ ×2（強い勝ち役）
-//   ヒフミ ×2（重い負け役）
-//   それ以外（◯の目＝通常役・目なし・ションベン・役なし）は ×1
-//   ※ションベンは目なしと同じ扱い（×1）。
-function roleMult(r){
+// 倍率役には性質の違う2種類がある：
+//   ・攻撃系（勝ったときだけ効く）… ピンゾロ×5 / アラシ×3 / シゴロ×2
+//   ・罰系  （負けたときだけ効く）… ヒフミ×2
+//   ・それ以外（◯の目・目なし・ションベン・なし）は ×1
+// 最終倍率 ＝「勝者の攻撃倍率 × 敗者のヒフミ倍率」。
+//   負けた側の攻撃系倍率（例：シゴロで負け）は効かない ＝ 掛け算しない。
+function attackMult(r){            // 勝ったときに効く倍率
   switch(r?.t){
     case 'pinzoro': return 5;
     case 'arashi':  return 3;
     case 'shigoro': return 2;
-    case 'hifumi':  return 2;
-    default:        return 1;   // ◯の目・目なし・ションベン・なし＝通常役（1倍）
+    default:        return 1;
   }
+}
+function penaltyMult(r){           // 負けたときに効く倍率（ヒフミのみ）
+  return r?.t==='hifumi' ? 2 : 1;
 }
 
 function calcPayout(pR, cR, bet) {
-  // 勝敗は出目の強さ（getRank）で決める。引き分け（同ランク）は親の勝ち。
+  // ① 勝敗は必ず出目の強さ（getRank）で決める。引き分け（同ランク）は親の勝ち。
   const pRank = getRank(pR), cRank = getRank(cR);
-  // 最終倍率 ＝ 親の役倍率 × 子の役倍率（通常役は1倍なので掛けても影響しない）。
-  //   例) 子ヒフミ(×2) × 親シゴロ(×2)   = ×4
-  //       子ションベン(×3) × 親シゴロ(×2) = ×6
-  //       子ヒフミ(×2) × 親ピンゾロ(×5)  = ×10
-  // この最終倍率をベット額に掛けてスコアを移動する。親・子どちらが倍率役でも、
-  // 両方が倍率役でも、必ず掛け算で反映される。
-  const m = roleMult(pR) * roleMult(cR);
-  if(pRank >= cRank){
+  const parentWins = pRank >= cRank;
+  // ② 最終倍率 ＝ 勝者の攻撃倍率 × 敗者のヒフミ倍率。
+  //   例) 親シゴロ 対 子シゴロ … 親勝ち ×2（子シゴロは負けなので効かない）
+  //       親シゴロ 対 子アラシ … 子勝ち ×3（親シゴロは負けなので効かない）
+  //       親シゴロ 対 子ヒフミ … 親勝ち ×2×2=×4（攻撃×罰）
+  //       親ピンゾロ 対 子ヒフミ … 親勝ち ×5×2=×10
+  const winner = parentWins ? pR : cR;
+  const loser  = parentWins ? cR : pR;
+  const m = attackMult(winner) * penaltyMult(loser);
+  if(parentWins){
     return { cd: -bet*m, pd: bet*m, m, w:'parent' }; // 親の勝ち
   }
   return { cd: bet*m, pd: -bet*m, m, w:'child' };     // 子の勝ち
@@ -928,9 +933,9 @@ function RollingScreen({ player, isParent, bet, round, onComplete, childList, be
     const arashiK = 2 + Math.floor(Math.random()*5);   // 2〜6のいずれかのゾロ目
     const dice = mustPinzoro ? [1,1,1] : mustArashi ? [arashiK,arashiK,arashiK] : rollDice();
     if(mustArashi) onForceArashiUsed?.();              // 一回使ったらフラグを解除（次からは通常）
-    // 1%（1/100）の確率でションベン＝サイコロがお椀の外へ飛び出す（即・負け）。1回振るごとに判定。
+    // 0.1%（1/1000）の確率でションベン＝サイコロがお椀の外へ飛び出す（即・負け）。1回振るごとに判定。
     // ただし強制ピンゾロ・強制アラシのターンはションベン判定を無効化する（必ずその目を出すため）。
-    const isShonben = !mustPinzoro && !mustArashi && Math.random() < 0.01;
+    const isShonben = !mustPinzoro && !mustArashi && Math.random() < 0.001;
     const res = isShonben
       ? { t:'shonben', l:'ションベン', sk:'ションベン', v:null }
       : classify(dice);
@@ -1377,8 +1382,9 @@ export default function App() {
     setStats(prev => {
       const counts = {...prev.counts};
       let totalThrows = prev.totalThrows;
+      // history には各投目の res（ションベン含む）が入っているので、これだけで全役を数える。
+      // （以前はションベンをここで数えた上で下でもう一度足しており、二重カウントになっていた）
       history.forEach(({res})=>{ counts[res.sk]=(counts[res.sk]||0)+1; totalThrows++; });
-      if(finalRes.t==='shonben') counts['ションベン']=(counts['ションベン']||0)+1;
       const next = {counts, totalThrows, totalTurns:prev.totalTurns+1};
       save(next);
       return next;
