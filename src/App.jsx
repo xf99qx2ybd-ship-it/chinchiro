@@ -798,6 +798,8 @@ function BettingScreen({ children, betStep, currentBet, onAdd, onReset, onConfir
         <div style={{fontSize:11,color:'#888',marginBottom:3}}>ベット入力</div>
         <div style={{fontSize:24,fontWeight:900,marginBottom:2}}>{cur?.name}さんのベット</div>
         <div style={{fontSize:12,color:'#888'}}>{betStep+1} / {children.length}人目</div>
+        {/* 現在ベットするプレイヤーの持ち点を一目で確認できるよう表示（レイアウトは維持） */}
+        <div style={{fontSize:12,color:'#888',marginTop:5}}>所持スコア <span style={{fontWeight:900,color:'#f5c842',fontFamily:'monospace'}}>{(cur?.score||0).toLocaleString()}</span>点</div>
       </div>
 
       <div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:28}}>
